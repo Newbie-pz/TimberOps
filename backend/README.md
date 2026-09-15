@@ -1,6 +1,6 @@
 # TimberOps Backend
 
-TimberOps 后端负责提供 HTTP API、应用配置、数据库访问基础设施，以及后续称重、订单和库存领域能力。当前仅完成 Phase 1.1 Backend Foundation，不包含业务模型或业务接口。
+TimberOps 后端负责提供 HTTP API、应用配置、数据库访问基础设施和称重核心领域能力。当前完成 Phase 1.2：Vehicle、Customer、WeighingTask、WeighingRecord、AuditLog、状态机、业务服务和首个数据库迁移。除 `/health` 外尚未开放业务 HTTP API。
 
 ## 技术栈
 
@@ -25,9 +25,10 @@ backend/
 │   ├── db/
 │   │   ├── base.py          # SQLAlchemy DeclarativeBase
 │   │   └── session.py       # Engine、SessionLocal、get_db
-│   ├── models/              # Phase 1.2 业务模型入口
-│   ├── schemas/             # Pydantic 模型
-│   ├── services/            # 应用服务
+│   ├── domain/              # 枚举、异常和纯 Decimal 称重计算
+│   ├── models/              # 五个核心 SQLAlchemy 模型
+│   ├── schemas/             # Pydantic v2 输入/读取模型
+│   ├── services/            # 事务和状态机应用服务
 │   └── integrations/ai/     # 仅预留边界，当前无 AI 实现
 ├── migrations/
 │   ├── env.py               # Alembic 环境
@@ -83,7 +84,28 @@ python -m alembic current
 python -m alembic upgrade head
 ```
 
-当前没有业务迁移，因此 `versions` 目录为空。
+当前迁移 `2e11a7a8e890_create_weighing_core_tables.py` 创建：
+
+- `vehicles`
+- `customers`
+- `weighing_tasks`
+- `weighing_records`
+- `audit_logs`
+
+`app/models/__init__.py` 会注册全部模型，Alembic 的 `target_metadata` 指向统一 `Base.metadata`。
+
+## 称重领域约定
+
+- UUID 作为五个核心实体的一致主键。
+- 重量使用 Python `Decimal` 和 PostgreSQL `NUMERIC(10,3)`，业务单位为吨。
+- `WeighingTask` 保存当前有效汇总；`WeighingRecord` 追加保存每次真实读数。
+- 任务创建时复制车辆核定总质量和司机信息，车辆档案修改不影响历史快照。
+- `status` 与 `weight_result` 分离，所有状态迁移只能由 `WeighingService` 执行。
+- 超重后任务返回 `WAIT_GROSS`，后续必须追加带原因的 `REWEIGH`。
+- `COMPLETED` 和 `CANCELLED` 都不能恢复称重流程。
+- 取消原因与状态变化写入 `AuditLog`。
+
+本阶段没有创建 `order_id`。Order 表尚不存在，此时保留无外键逻辑字段会允许悬空引用；后续实现 Order 时再通过 Alembic 增加 nullable 外键。
 
 ## Docker 启动
 
@@ -99,7 +121,7 @@ docker build -t timberops-backend .\backend
 docker run --rm -p 8000:8000 --env-file .env timberops-backend
 ```
 
-Phase 1.1 按要求未把后端服务加入根目录 `docker-compose.yml`。在后续 Compose 集成前，上述容器命令要求 `.env` 中的数据库地址可从容器访问；健康检查本身不连接数据库。
+Phase 1.2 仍未把后端服务加入根目录 `docker-compose.yml`。在后续 Compose 集成前，上述容器命令要求 `.env` 中的数据库地址可从容器访问；健康检查本身不连接数据库。
 
 ## 当前实现范围
 
@@ -109,8 +131,11 @@ Phase 1.1 按要求未把后端服务加入根目录 `docker-compose.yml`。在�
 - `GET /health`
 - pydantic-settings 配置
 - SQLAlchemy Engine、SessionLocal 和请求依赖
-- Alembic 基础环境及空 metadata
+- Vehicle、Customer、WeighingTask、WeighingRecord、AuditLog
+- Pydantic v2 创建、更新、读取与称重命令 Schema
+- Decimal 称重计算、合法状态迁移、超重复磅和取消审计
+- Alembic 首个业务迁移
 - Dockerfile
-- 健康检查测试
+- 健康检查及称重领域测试
 
-未实现：称重、车辆、客户、用户、认证、订单、库存、业务表、AI、Agent、MCP、RAG 和设备接入。
+未实现：业务 HTTP API、用户、认证、Order、Inventory、Material、磅单打印、真实设备、AI、Agent、MCP 和 RAG。

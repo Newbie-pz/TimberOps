@@ -1,5 +1,14 @@
-"""SQLAlchemy model package.
+"""Import all models so Alembic can discover complete metadata."""
 
-Business models will be added in Phase 1.2. Import them here so Alembic can
-discover their metadata after they exist.
-"""
+from app.models.audit_log import AuditLog
+from app.models.customer import Customer
+from app.models.vehicle import Vehicle
+from app.models.weighing import WeighingRecord, WeighingTask
+
+__all__ = [
+    "AuditLog",
+    "Customer",
+    "Vehicle",
+    "WeighingRecord",
+    "WeighingTask",
+]

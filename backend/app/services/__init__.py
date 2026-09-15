@@ -1,1 +1,7 @@
-"""Application service package for future business use cases."""
+"""Application services exposed to future API handlers."""
+
+from app.services.customer_service import CustomerService
+from app.services.vehicle_service import VehicleService
+from app.services.weighing_service import WeighingService
+
+__all__ = ["CustomerService", "VehicleService", "WeighingService"]
