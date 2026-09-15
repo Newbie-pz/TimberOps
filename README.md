@@ -2,7 +2,7 @@
 
 TimberOps 是面向中小型木材加工企业的智能运营与车辆称重管理平台。系统包含可独立运行的磅房模块，并逐步覆盖客户、订单、木材库存、出入库和审计。
 
-> 当前状态：Phase 1.3 REST API。Vehicle、Customer 与完整称重闭环已提供后端 API 和 Swagger，尚未提供前端页面。
+> 当前状态：Phase 2.2 Read-only Business Agent。车辆称重闭环、Vue 3 磅房工作台和只读 LangGraph 智能查询 API 已完成。
 
 ## 业务定位
 
@@ -41,6 +41,7 @@ overweight_tons = max(gross_weight_tons - allowed_gross_weight_tons, 0)
 | 后端 | Python 3.11+、FastAPI、SQLAlchemy 2.x、Pydantic、Alembic、pytest |
 | 前端 | Vue 3、TypeScript、Vite、Element Plus |
 | 数据库 | PostgreSQL |
+| AI | LangGraph、LangChain Core、豆包 / 火山方舟 OpenAI-compatible API |
 | 基础设施 | Docker Compose、Git |
 
 项目采用模块化单体架构。称重、订单和库存拥有各自业务边界，需要关联时通过显式应用用例协调，而不是由称重完成隐式修改库存。
@@ -57,11 +58,11 @@ TimberOps/
 │   │   ├── domain/          # 称重枚举、异常与纯业务计算
 │   │   ├── models/          # SQLAlchemy 核心模型
 │   │   ├── schemas/         # Pydantic 请求与响应模型
-│   │   ├── services/        # 应用服务与业务用例
-│   │   └── integrations/ai/ # 未来 AI/MCP 边界（当前不实现）
+│   │   ├── services/        # 业务用例与只读统计查询
+│   │   └── integrations/ai/ # Provider、Tools 与单 Agent Graph
 │   ├── migrations/          # Alembic 迁移
 │   └── tests/               # 自动化测试
-├── frontend/                # Vue 前端骨架
+├── frontend/                # Vue 3 磅房工作台
 ├── docs/                    # 架构、数据库、流程与计划
 ├── .env.example
 └── docker-compose.yml
@@ -83,7 +84,36 @@ TimberOps/
    docker compose up -d db
    ```
 
-Phase 1 才会加入可运行的后端、前端和对应容器。
+后端与前端的详细启动步骤分别见各自 README。
+
+## 智能业务 Agent
+
+Phase 2.2 提供只读 Agent API：
+
+```text
+User
+  ↓
+TimberOps Agent
+  ↓
+LLM / Doubao
+  ↕
+Read-only Business Tools
+  ↓
+AnalyticsService
+  ↓
+PostgreSQL
+```
+
+Agent 通过真实 Tool Calling 自主选择五个受控业务查询工具。工具返回结构化数据，模型负责简洁解释；模型没有裸 SQL、数据库写入、Web Search 或称重操作能力。
+
+支持的问题示例：
+
+- “今天煤炭称了多少吨？”
+- “今天有没有超重车辆？”
+- “蒙H12345 最近称过什么货？”
+- “查询 WT-xxxx 的称重历史。”
+
+AI 默认关闭。配置方式和 API 示例见 [后端 README](backend/README.md)。
 
 ## 文档
 
@@ -100,11 +130,11 @@ Phase 1 才会加入可运行的后端、前端和对应容器。
 - `WeighingRecord` 与 `AuditLog` 采用追加式留痕。
 - `COMPLETED` 任务普通用户不可修改，错误必须通过更正/冲正流程处理。
 - 关键状态跳转、重量计算、复磅、幂等和并发场景必须有 pytest 测试。
-- 未来 AI 只能通过受控应用服务查询或提交业务命令，不直接写数据库。
+- AI 只能调用受控的只读查询服务，不直接访问或写入数据库。
 
 ## 当前边界
 
-Phase 1.3 已完成 Vehicle、Customer 与称重 REST API、统一异常响应及 Swagger 闭环验证。订单、库存、前端应用、鉴权、地磅设备接入和 AI 能力均未实现。
+Phase 2.2 已完成 Vehicle、Customer、称重 REST API、Vue 磅房工作台和只读业务 Agent。订单、库存、鉴权、地磅设备、聊天前端、MCP、RAG 与多 Agent 尚未实现。
 
 ## License
 
