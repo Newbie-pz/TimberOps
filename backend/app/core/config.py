@@ -15,6 +15,26 @@ class Settings(BaseSettings):
         validation_alias="APP_NAME",
     )
     debug: bool = Field(default=False, validation_alias="DEBUG")
+    ai_enabled: bool = Field(default=False, validation_alias="AI_ENABLED")
+    llm_provider: str = Field(default="doubao", validation_alias="LLM_PROVIDER")
+    doubao_api_key: str | None = Field(
+        default=None,
+        validation_alias="DOUBAO_API_KEY",
+    )
+    doubao_base_url: str | None = Field(
+        default=None,
+        validation_alias="DOUBAO_BASE_URL",
+    )
+    doubao_model: str | None = Field(
+        default=None,
+        validation_alias="DOUBAO_MODEL",
+    )
+    ai_temperature: float = Field(
+        default=0,
+        ge=0,
+        le=2,
+        validation_alias="AI_TEMPERATURE",
+    )
 
     model_config = SettingsConfigDict(
         env_file=("../.env", ".env"),

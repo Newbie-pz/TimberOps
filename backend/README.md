@@ -1,6 +1,6 @@
 # TimberOps Backend
 
-TimberOps 后端负责提供 HTTP API、应用配置、数据库访问基础设施和称重核心领域能力。当前完成 Phase 1.3：Vehicle、Customer 和完整称重闭环已通过 REST API 暴露，并可在 Swagger 中执行。
+TimberOps 后端负责 HTTP API、应用配置、数据库访问、称重领域能力和只读业务智能查询。当前完成 Phase 2.2：在既有称重闭环之上增加 LangGraph Agent，并通过豆包 / 火山方舟 OpenAI-compatible 接口提供模型能力。
 
 ## 技术栈
 
@@ -11,6 +11,9 @@ TimberOps 后端负责提供 HTTP API、应用配置、数据库访问基础设�
 - Alembic
 - PostgreSQL（psycopg 3）
 - pytest
+- LangGraph、LangChain Core、LangChain OpenAI
+
+Phase 2.2 已验证版本：LangGraph 1.2.11、LangChain Core 1.6.3、LangChain OpenAI 1.6.2。
 
 ## 目录结构
 
@@ -30,8 +33,11 @@ backend/
 │   ├── domain/              # 枚举、异常和纯 Decimal 称重计算
 │   ├── models/              # 五个核心 SQLAlchemy 模型
 │   ├── schemas/             # Pydantic v2 输入/读取模型
-│   ├── services/            # 事务和状态机应用服务
-│   └── integrations/ai/     # 仅预留边界，当前无 AI 实现
+│   ├── services/            # 状态机服务与只读 AnalyticsService
+│   └── integrations/ai/
+│       ├── providers/       # 可替换的 LLM Provider 与豆包实现
+│       ├── tools/           # 只读称重业务工具
+│       └── agent/           # LangGraph 状态、Prompt 与 Graph
 ├── migrations/
 │   ├── env.py               # Alembic 环境
 │   └── versions/            # 数据库版本脚本
@@ -50,6 +56,12 @@ backend/
 DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/timberops
 APP_NAME=TimberOps backend
 DEBUG=false
+AI_ENABLED=false
+LLM_PROVIDER=doubao
+DOUBAO_API_KEY=
+DOUBAO_BASE_URL=
+DOUBAO_MODEL=
+AI_TEMPERATURE=0
 ```
 
 不要提交真实密码。项目根目录已提供 `.env.example`。
@@ -93,8 +105,62 @@ python -m uvicorn app.main:app --reload
 | POST | `/api/v1/weighing/tasks/{id}/gross` | 记录首次毛重并判定 |
 | POST | `/api/v1/weighing/tasks/{id}/reweigh` | 超重卸货后复磅 |
 | POST | `/api/v1/weighing/tasks/{id}/complete` | 完成正常任务 |
+| POST | `/api/v1/ai/chat` | 只读业务 Agent 问答 |
 
 任务列表支持 `cargo_type`、`status`、`vehicle_id` 查询参数。
+
+## 只读 AI Agent
+
+```text
+User
+  ↓
+TimberOps Agent（LangGraph）
+  ↓
+LLM Provider / Doubao
+  ↕ Tool Calling
+Read-only Business Tools
+  ↓
+AnalyticsService
+  ↓
+SQLAlchemy / PostgreSQL
+```
+
+Agent 不持有 SQL 工具，也不直接访问 Session。模型只能选择以下固定工具，工具只调用 `AnalyticsService`：
+
+- `get_today_weighing_summary`
+- `get_cargo_weight_summary`
+- `get_overweight_records`
+- `get_vehicle_weighing_history`
+- `get_weighing_task_detail`
+
+Agent 当前只能查询、统计、分析和解释，不能创建或修改车辆、客户、称重任务与称重记录。响应中的 `tool_calls` 只公开工具名称、参数和执行状态，不公开隐藏推理过程。
+
+示例请求：
+
+```http
+POST /api/v1/ai/chat
+Content-Type: application/json
+
+{"message": "今天煤炭称了多少吨？"}
+```
+
+可提问示例：
+
+- “今天煤炭称了多少吨？”
+- “今天有没有超重车辆？”
+- “蒙H12345 最近称过什么货？”
+- “查询 WT-xxxx 的称重历史。”
+
+AI 默认关闭。只有调用 Agent API 时才检查 Provider 配置；缺少配置或 `AI_ENABLED=false` 时返回 `503 AI_SERVICE_UNAVAILABLE`，健康检查和原有业务 API 继续正常工作。
+
+豆包配置步骤：
+
+1. 在火山方舟创建 API Key 和可调用的模型/推理接入点。
+2. 复制根目录 `.env.example` 为 `.env`。
+3. 设置 `AI_ENABLED=true`、`DOUBAO_API_KEY`、`DOUBAO_BASE_URL` 和 `DOUBAO_MODEL`。
+4. 重启后端。模型 ID 和 Base URL 均由环境提供，源码不内置具体值。
+
+LangGraph 使用单 Agent 循环：`START → Agent → (ToolNode → Agent)* → END`。首版不保存会话记忆。
 
 领域错误统一返回：
 
@@ -178,5 +244,9 @@ Phase 1.2 仍未把后端服务加入根目录 `docker-compose.yml`。在后续 
 - Swagger/OpenAPI 完整称重闭环
 - Dockerfile
 - 健康检查及称重领域测试
+- 只读 AnalyticsService 和五个结构化业务 Tool
+- 可替换 LLM Provider 与豆包 Provider
+- LangGraph Tool Calling Agent 和 `/api/v1/ai/chat`
+- 不调用真实模型的 Stub Agent 测试
 
-未实现：用户、认证、RBAC、Order、Inventory、Material、磅单打印、真实设备、前端、AI、Agent、MCP 和 RAG。
+未实现：用户、认证、RBAC、Order、Inventory、Material、磅单打印、真实设备、Agent 前端、MCP、RAG 和多 Agent。

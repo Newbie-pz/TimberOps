@@ -12,6 +12,7 @@ from app.domain.exceptions import (
     NotFoundError,
     ValidationError,
 )
+from app.integrations.ai.exceptions import AIServiceUnavailableError
 
 
 class ErrorBody(TypedDict):
@@ -64,6 +65,19 @@ async def business_conflict_handler(
     )
 
 
+async def ai_service_unavailable_handler(
+    request: Request,
+    exc: AIServiceUnavailableError,
+) -> JSONResponse:
+    """Return a stable error envelope when the optional AI service is disabled."""
+    del request
+    return _error_response(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        code="AI_SERVICE_UNAVAILABLE",
+        message=str(exc),
+    )
+
+
 def register_exception_handlers(application: FastAPI) -> None:
     """Register handlers once when constructing the application."""
     application.add_exception_handler(NotFoundError, resource_not_found_handler)
@@ -71,3 +85,7 @@ def register_exception_handlers(application: FastAPI) -> None:
     application.add_exception_handler(ConflictError, business_conflict_handler)
     application.add_exception_handler(BusinessRuleError, business_conflict_handler)
     application.add_exception_handler(ValidationError, business_conflict_handler)
+    application.add_exception_handler(
+        AIServiceUnavailableError,
+        ai_service_unavailable_handler,
+    )

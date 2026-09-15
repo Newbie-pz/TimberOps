@@ -1,1 +1,1 @@
-"""Reserved AI integration boundary; no AI functionality is implemented."""
+"""Read-only Agent integration boundary; core business code stays AI-agnostic."""

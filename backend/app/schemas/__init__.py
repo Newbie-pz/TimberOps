@@ -1,5 +1,6 @@
 """Public Pydantic request and response schemas."""
 
+from app.schemas.ai import AIChatRequest, AIChatResponse, AIToolCallRead
 from app.schemas.customer import CustomerCreate, CustomerRead, CustomerUpdate
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.schemas.weighing import (
@@ -14,6 +15,9 @@ from app.schemas.weighing import (
 )
 
 __all__ = [
+    "AIChatRequest",
+    "AIChatResponse",
+    "AIToolCallRead",
     "CancelWeighingTaskInput",
     "CustomerCreate",
     "CustomerRead",
