@@ -4,6 +4,8 @@ from typing import Literal, TypedDict
 
 from fastapi import APIRouter
 
+from app.api.v1 import customers, vehicles, weighing
+
 
 class HealthResponse(TypedDict):
     """Shape of the unauthenticated service health response."""
@@ -13,6 +15,11 @@ class HealthResponse(TypedDict):
 
 
 api_router = APIRouter()
+v1_router = APIRouter(prefix="/api/v1")
+v1_router.include_router(vehicles.router)
+v1_router.include_router(customers.router)
+v1_router.include_router(weighing.router)
+api_router.include_router(v1_router)
 
 
 @api_router.get("/health", tags=["system"])

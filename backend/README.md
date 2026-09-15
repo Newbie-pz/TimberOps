@@ -1,6 +1,6 @@
 # TimberOps Backend
 
-TimberOps 后端负责提供 HTTP API、应用配置、数据库访问基础设施和称重核心领域能力。当前完成 Phase 1.2：Vehicle、Customer、WeighingTask、WeighingRecord、AuditLog、状态机、业务服务和首个数据库迁移。除 `/health` 外尚未开放业务 HTTP API。
+TimberOps 后端负责提供 HTTP API、应用配置、数据库访问基础设施和称重核心领域能力。当前完成 Phase 1.3：Vehicle、Customer 和完整称重闭环已通过 REST API 暴露，并可在 Swagger 中执行。
 
 ## 技术栈
 
@@ -19,7 +19,9 @@ backend/
 ├── app/
 │   ├── main.py              # FastAPI 应用入口
 │   ├── api/
-│   │   └── router.py        # 顶层 APIRouter 与健康检查
+│   │   ├── exceptions.py    # 统一领域异常转换
+│   │   ├── router.py        # 顶层 APIRouter 与健康检查
+│   │   └── v1/              # Vehicle、Customer、Weighing REST API
 │   ├── core/
 │   │   └── config.py        # 环境变量配置
 │   ├── db/
@@ -69,7 +71,43 @@ python -m uvicorn app.main:app --reload
 访问：
 
 - 健康检查：`http://localhost:8000/health`
-- OpenAPI：`http://localhost:8000/docs`
+- Swagger UI：`http://localhost:8000/docs`
+- OpenAPI JSON：`http://localhost:8000/openapi.json`
+
+## REST API
+
+所有业务接口使用 `/api/v1` 前缀：
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST / GET | `/api/v1/vehicles` | 创建、列出车辆 |
+| GET / PATCH | `/api/v1/vehicles/{id}` | 查询、更新车辆档案 |
+| POST / GET | `/api/v1/customers` | 创建、列出客户 |
+| GET / PATCH | `/api/v1/customers/{id}` | 查询、更新客户 |
+| POST / GET | `/api/v1/weighing/tasks` | 创建、过滤查询称重任务 |
+| GET | `/api/v1/weighing/tasks/{id}` | 任务汇总及完整历史 |
+| GET | `/api/v1/weighing/tasks/{id}/records` | 按序查询称重读数 |
+| POST | `/api/v1/weighing/tasks/{id}/tare` | 记录皮重 |
+| POST | `/api/v1/weighing/tasks/{id}/loading` | 开始装货 |
+| POST | `/api/v1/weighing/tasks/{id}/wait-gross` | 装货完成，等待毛重 |
+| POST | `/api/v1/weighing/tasks/{id}/gross` | 记录首次毛重并判定 |
+| POST | `/api/v1/weighing/tasks/{id}/reweigh` | 超重卸货后复磅 |
+| POST | `/api/v1/weighing/tasks/{id}/complete` | 完成正常任务 |
+
+任务列表支持 `cargo_type`、`status`、`vehicle_id` 查询参数。
+
+领域错误统一返回：
+
+```json
+{
+  "error": {
+    "code": "INVALID_STATE",
+    "message": "human readable message"
+  }
+}
+```
+
+资源不存在为 `404 RESOURCE_NOT_FOUND`；非法状态为 `409 INVALID_STATE`；重复车牌、超重完成等为 `409 BUSINESS_CONFLICT`；请求参数验证保持 FastAPI 默认 422。
 
 运行测试：
 
@@ -135,7 +173,10 @@ Phase 1.2 仍未把后端服务加入根目录 `docker-compose.yml`。在后续 
 - Pydantic v2 创建、更新、读取与称重命令 Schema
 - Decimal 称重计算、合法状态迁移、超重复磅和取消审计
 - Alembic 首个业务迁移
+- Vehicle、Customer 和 Weighing REST API
+- 统一业务异常响应
+- Swagger/OpenAPI 完整称重闭环
 - Dockerfile
 - 健康检查及称重领域测试
 
-未实现：业务 HTTP API、用户、认证、Order、Inventory、Material、磅单打印、真实设备、AI、Agent、MCP 和 RAG。
+未实现：用户、认证、RBAC、Order、Inventory、Material、磅单打印、真实设备、前端、AI、Agent、MCP 和 RAG。

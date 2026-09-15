@@ -17,7 +17,12 @@ from app.domain.enums import (
     WeightSource,
     WeightType,
 )
-from app.domain.exceptions import ConflictError, NotFoundError, ValidationError
+from app.domain.exceptions import (
+    BusinessRuleError,
+    ConflictError,
+    InvalidStateError,
+    NotFoundError,
+)
 from app.domain.weighing import calculate_weight, quantize_tons
 from app.models.audit_log import AuditLog
 from app.models.customer import Customer
@@ -57,9 +62,11 @@ class WeighingService:
             if customer is None:
                 raise NotFoundError(f"customer not found: {data.customer_id}")
         if data.weighing_direction is not WeighingDirection.OUTBOUND:
-            raise ValidationError("V1 only supports OUTBOUND weighing")
+            raise BusinessRuleError("V1 only supports OUTBOUND weighing")
         if data.cargo_type is CargoType.OTHER and not data.cargo_name:
-            raise ValidationError("cargo_name is required when cargo_type is OTHER")
+            raise BusinessRuleError(
+                "cargo_name is required when cargo_type is OTHER"
+            )
 
         task = WeighingTask(
             task_no=self._new_task_no(),
@@ -83,6 +90,42 @@ class WeighingService:
         self._commit("could not create weighing task")
         self._session.refresh(task)
         return task
+
+    def get_task(self, task_id: UUID) -> WeighingTask:
+        """Return one task without changing its state."""
+        task = self._session.get(WeighingTask, task_id)
+        if task is None:
+            raise NotFoundError(f"weighing task not found: {task_id}")
+        return task
+
+    def list_tasks(
+        self,
+        *,
+        cargo_type: CargoType | None = None,
+        status: WeighingStatus | None = None,
+        vehicle_id: UUID | None = None,
+    ) -> list[WeighingTask]:
+        """List tasks using the simple filters supported by API V1."""
+        statement = select(WeighingTask)
+        if cargo_type is not None:
+            statement = statement.where(WeighingTask.cargo_type == cargo_type)
+        if status is not None:
+            statement = statement.where(WeighingTask.status == status)
+        if vehicle_id is not None:
+            statement = statement.where(WeighingTask.vehicle_id == vehicle_id)
+        statement = statement.order_by(WeighingTask.created_at, WeighingTask.id)
+        return list(self._session.scalars(statement))
+
+    def list_records(self, task_id: UUID) -> list[WeighingRecord]:
+        """Return all accepted readings in immutable sequence order."""
+        self.get_task(task_id)
+        return list(
+            self._session.scalars(
+                select(WeighingRecord)
+                .where(WeighingRecord.weighing_task_id == task_id)
+                .order_by(WeighingRecord.sequence_no)
+            )
+        )
 
     def record_tare(
         self,
@@ -136,7 +179,9 @@ class WeighingService:
         task = self._get_task_for_update(task_id)
         self._require_status(task, WeighingStatus.WAIT_GROSS)
         if task.weight_result is not WeightResult.PENDING or self._has_gross_record(task):
-            raise ValidationError("use record_reweigh after the first gross reading")
+            raise InvalidStateError(
+                "use record_reweigh after the first gross reading"
+            )
         return self._record_gross_like(
             task=task,
             weight_type=WeightType.GROSS,
@@ -155,9 +200,11 @@ class WeighingService:
         task = self._get_task_for_update(task_id)
         self._require_status(task, WeighingStatus.WAIT_GROSS)
         if task.weight_result is not WeightResult.OVERWEIGHT:
-            raise ValidationError("REWEIGH is only allowed after an overweight result")
+            raise BusinessRuleError(
+                "REWEIGH is only allowed after an overweight result"
+            )
         if not data.remark.strip():
-            raise ValidationError("remark is required for REWEIGH")
+            raise BusinessRuleError("remark is required for REWEIGH")
         return self._record_gross_like(
             task=task,
             weight_type=WeightType.REWEIGH,
@@ -168,9 +215,9 @@ class WeighingService:
 
     def complete_task(self, task_id: UUID) -> WeighingTask:
         task = self._get_task_for_update(task_id)
-        self._require_status(task, WeighingStatus.GROSS_COMPLETED)
         if task.weight_result is not WeightResult.NORMAL:
-            raise ValidationError("only a NORMAL weighing task can be completed")
+            raise BusinessRuleError("only a NORMAL weighing task can be completed")
+        self._require_status(task, WeighingStatus.GROSS_COMPLETED)
         task.status = WeighingStatus.COMPLETED
         task.completed_at = utc_now()
         task.version += 1
@@ -186,7 +233,9 @@ class WeighingService:
     ) -> WeighingTask:
         task = self._get_task_for_update(task_id)
         if task.status not in self._CANCELLABLE_STATUSES:
-            raise ValidationError(f"task in {task.status.value} cannot be cancelled")
+            raise InvalidStateError(
+                f"task in {task.status.value} cannot be cancelled"
+            )
 
         previous_status = task.status
         task.status = WeighingStatus.CANCELLED
@@ -215,7 +264,9 @@ class WeighingService:
         remark: str | None,
     ) -> WeighingTask:
         if task.tare_weight_tons is None:
-            raise ValidationError("tare weight must exist before gross weighing")
+            raise InvalidStateError(
+                "tare weight must exist before gross weighing"
+            )
 
         calculation = calculate_weight(
             tare_weight_tons=task.tare_weight_tons,
@@ -297,7 +348,7 @@ class WeighingService:
     @staticmethod
     def _require_status(task: WeighingTask, expected: WeighingStatus) -> None:
         if task.status is not expected:
-            raise ValidationError(
+            raise InvalidStateError(
                 f"task in {task.status.value} cannot perform an action requiring "
                 f"{expected.value}"
             )

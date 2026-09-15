@@ -2,7 +2,7 @@
 
 TimberOps 是面向中小型木材加工企业的智能运营与车辆称重管理平台。系统包含可独立运行的磅房模块，并逐步覆盖客户、订单、木材库存、出入库和审计。
 
-> 当前状态：Phase 1.2 Weighing Core Domain。后端称重核心模型、Service 与迁移已建立，尚未提供业务 API 或前端页面。
+> 当前状态：Phase 1.3 REST API。Vehicle、Customer 与完整称重闭环已提供后端 API 和 Swagger，尚未提供前端页面。
 
 ## 业务定位
 
@@ -104,7 +104,7 @@ Phase 1 才会加入可运行的后端、前端和对应容器。
 
 ## 当前边界
 
-Phase 1.2 已完成 Vehicle、Customer、WeighingTask、WeighingRecord、AuditLog、称重状态机、Service 和首个迁移。业务 HTTP API、订单、库存、前端应用、鉴权、地磅设备接入和 AI 能力均未实现。
+Phase 1.3 已完成 Vehicle、Customer 与称重 REST API、统一异常响应及 Swagger 闭环验证。订单、库存、前端应用、鉴权、地磅设备接入和 AI 能力均未实现。
 
 ## License
 

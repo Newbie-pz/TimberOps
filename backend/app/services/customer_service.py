@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domain.exceptions import NotFoundError
@@ -27,6 +28,14 @@ class CustomerService:
         if customer is None:
             raise NotFoundError(f"customer not found: {customer_id}")
         return customer
+
+    def list_customers(self) -> list[Customer]:
+        """Return customers in a stable creation order for the V1 API."""
+        return list(
+            self._session.scalars(
+                select(Customer).order_by(Customer.created_at, Customer.id)
+            )
+        )
 
     def update_customer(self, customer_id: UUID, data: CustomerUpdate) -> Customer:
         customer = self.get_customer(customer_id)

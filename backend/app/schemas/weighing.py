@@ -136,3 +136,10 @@ class WeighingTaskRead(BaseModel):
     version: int
     created_at: datetime
     updated_at: datetime
+
+
+class TaskDetailResponse(BaseModel):
+    """Current task summary together with its ordered immutable history."""
+
+    task: WeighingTaskRead
+    records: list[WeighingRecordRead]

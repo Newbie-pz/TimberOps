@@ -9,6 +9,14 @@ class ValidationError(DomainError):
     """A command violates a business rule or state transition."""
 
 
+class InvalidStateError(ValidationError):
+    """A command is not legal in the entity's current lifecycle state."""
+
+
+class BusinessRuleError(ValidationError):
+    """A command conflicts with a non-state business invariant."""
+
+
 class NotFoundError(DomainError):
     """A requested entity does not exist."""
 

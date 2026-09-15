@@ -41,23 +41,19 @@ class VehicleUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    plate_number: str | None = Field(default=None, max_length=20)
     driver_name: str | None = Field(default=None, max_length=100)
     driver_phone: str | None = Field(default=None, max_length=32)
     vehicle_type: str | None = Field(default=None, max_length=50)
     allowed_gross_weight_tons: PositiveWeight | None = None
     remark: str | None = None
 
-    @field_validator("plate_number")
-    @classmethod
-    def validate_optional_plate(cls, value: str | None) -> str | None:
-        return None if value is None else _normalize_plate(value)
-
     @model_validator(mode="after")
     def reject_null_required_fields(self) -> "VehicleUpdate":
-        for field in ("plate_number", "allowed_gross_weight_tons"):
-            if field in self.model_fields_set and getattr(self, field) is None:
-                raise ValueError(f"{field} cannot be null")
+        if (
+            "allowed_gross_weight_tons" in self.model_fields_set
+            and self.allowed_gross_weight_tons is None
+        ):
+            raise ValueError("allowed_gross_weight_tons cannot be null")
         return self
 
 

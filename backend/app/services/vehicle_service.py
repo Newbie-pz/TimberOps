@@ -42,6 +42,14 @@ class VehicleService:
             raise NotFoundError(f"vehicle not found: {vehicle_id}")
         return vehicle
 
+    def list_vehicles(self) -> list[Vehicle]:
+        """Return vehicles in a stable creation order for the V1 API."""
+        return list(
+            self._session.scalars(
+                select(Vehicle).order_by(Vehicle.created_at, Vehicle.id)
+            )
+        )
+
     def update_vehicle(self, vehicle_id: UUID, data: VehicleUpdate) -> Vehicle:
         vehicle = self.get_vehicle(vehicle_id)
         changes = data.model_dump(exclude_unset=True)
