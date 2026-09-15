@@ -1,0 +1,3 @@
+Alembic migration environment for TimberOps.
+
+Business revisions begin in Phase 1.2. Do not create tables outside Alembic.
