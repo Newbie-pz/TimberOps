@@ -1,6 +1,6 @@
 # TimberOps Frontend
 
-TimberOps 磅房操作端，当前完成阶段为 **Phase 2.1 — Vue 3 Weighing Workbench**。前端只消费既有 FastAPI REST API，不承载称重规则，也不会自行改变任务状态。
+TimberOps 磅房操作端，当前完成阶段为 **Phase 2.4 — AI Business Assistant Frontend**。前端消费既有 FastAPI REST API，不承载称重规则、Agent 逻辑或数据库查询。
 
 ## 技术栈
 
@@ -58,8 +58,31 @@ cp .env.example .env
 | `/weighing/create` | 创建称重任务 | 选择车辆、客户和货物并创建出库称重任务 |
 | `/weighing/workbench/:id` | 称重工作台 | 按后端状态推进空车、装货、重车、复磅和完成流程 |
 | `/weighing/history` | 称重历史 | 筛选任务并查看称重记录详情 |
+| `/ai` | 智能助手 | 通过现有 LangGraph Agent 查询真实称重业务数据 |
 
 后端以 `weight_result=OVERWEIGHT` 表示超重。此时任务保持后端返回的 `WAIT_GROSS` 状态，工作台展示红色超重警示和复磅入口；前端没有新增 `OVERWEIGHT` 或 `REWEIGH` 状态。
+
+## AI 智能助手
+
+AI 页面调用链：
+
+```text
+Vue /ai
+  ↓ POST /api/v1/ai/chat
+FastAPI
+  ↓
+LangGraph Agent / Doubao
+  ↓
+Read-only Business Tools
+  ↓
+AnalyticsService / PostgreSQL
+```
+
+页面支持自然语言提问、推荐问题、Tool Call 名称/参数/状态展示、请求防重复、清空当前对话和 AI 不可用提示。对话仅保存在当前页面内存，刷新后清空，不使用 `localStorage` 保存业务问答。
+
+前端只显示后端明确返回的 `answer` 和 `tool_calls`，不显示或构造模型推理过程。当前助手严格只读，不会修改称重、车辆或客户数据。
+
+MCP Server 是供外部 Agent 使用的独立协议入口，不参与 Vue 智能助手调用链；浏览器始终通过 `/api/v1/ai/chat` 访问 TimberOps Agent，也不会直接访问豆包 API。
 
 ## 目录结构
 
@@ -72,7 +95,7 @@ src/
 ├── stores/       # Pinia 跨页面状态
 ├── types/        # 与后端 Schema 对齐的 TypeScript 类型
 ├── utils/        # 时间、状态和吨位格式化
-└── views/        # Dashboard、档案管理与称重页面
+└── views/        # Dashboard、档案管理、称重与 AI 助手页面
 ```
 
 重量值按后端 Decimal 的 JSON 字符串处理；涉及净重和超重预览时采用千分之一吨的整数运算，避免 JavaScript 浮点误差。
@@ -80,7 +103,8 @@ src/
 ## 当前不包含
 
 - 登录、鉴权和权限管理
-- AI、Agent、MCP、RAG
+- AI 流式响应、后端对话持久化
+- Multi-Agent、RAG、Web Search
+- 前端 MCP Client
 - 前端自动化测试套件
 - Dashboard 真实统计接口
-- Phase 2.2 及后续功能

@@ -124,3 +124,26 @@ export interface ReweighInput {
   weight_tons: Tons
   remark: string
 }
+
+export interface AIToolCall {
+  name: string
+  arguments: Record<string, unknown>
+  status: string
+}
+
+export interface AIChatRequest {
+  message: string
+}
+
+export interface AIChatResponse {
+  answer: string
+  tool_calls: AIToolCall[]
+}
+
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  toolCalls?: AIToolCall[]
+  createdAt: string
+}

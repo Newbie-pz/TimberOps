@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   DataAnalysis,
+  ChatDotRound,
   Fold,
   Goods,
   List,
@@ -63,6 +64,10 @@ function navigate(path: string): void {
         <el-menu-item index="/weighing/history">
           <el-icon><List /></el-icon>
           <template #title>称重历史</template>
+        </el-menu-item>
+        <el-menu-item index="/ai">
+          <el-icon><ChatDotRound /></el-icon>
+          <template #title>智能助手</template>
         </el-menu-item>
       </el-menu>
 

@@ -45,6 +45,12 @@ const router = createRouter({
           component: () => import('@/views/weighing/History.vue'),
           meta: { title: '称重历史' },
         },
+        {
+          path: 'ai',
+          name: 'ai-assistant',
+          component: () => import('@/views/ai/Assistant.vue'),
+          meta: { title: '智能助手' },
+        },
       ],
     },
   ],

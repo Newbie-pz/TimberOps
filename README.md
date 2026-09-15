@@ -2,7 +2,7 @@
 
 TimberOps 是面向中小型木材加工企业的智能运营与车辆称重管理平台。系统包含可独立运行的磅房模块，并逐步覆盖客户、订单、木材库存、出入库和审计。
 
-> 当前状态：Phase 2.3 MCP Server。车辆称重闭环、Vue 3 磅房工作台、只读 LangGraph Agent 和 Streamable HTTP MCP 查询服务已完成。
+> 当前状态：Phase 2.4 AI Business Assistant Frontend。车辆称重闭环、Vue 3 磅房工作台、只读 LangGraph Agent、MCP 查询服务和 AI 助手页面已完成。
 
 ## 业务定位
 
@@ -65,7 +65,7 @@ TimberOps/
 │   │       └── mcp/         # 外部 Agent 的只读 MCP Server
 │   ├── migrations/          # Alembic 迁移
 │   └── tests/               # 自动化测试
-├── frontend/                # Vue 3 磅房工作台
+├── frontend/                # Vue 3 磅房工作台与 AI 助手
 ├── docs/                    # 架构、数据库、流程与计划
 ├── .env.example
 └── docker-compose.yml
@@ -118,6 +118,24 @@ Agent 通过真实 Tool Calling 自主选择五个受控业务查询工具。工
 
 AI 默认关闭。配置方式和 API 示例见 [后端 README](backend/README.md)。
 
+### Vue AI 助手调用链
+
+```text
+Vue /ai
+  ↓ POST /api/v1/ai/chat
+FastAPI
+  ↓
+LangGraph Agent
+  ↓
+Doubao
+  ↓
+Read-only Business Tools
+  ↓
+AnalyticsService / PostgreSQL
+```
+
+AI 助手页面提供推荐业务问题、普通 HTTP 问答、可折叠 Tool Call 调试信息和只读安全提示。浏览器不保存长期会话，也不包含任何豆包 Key、Base URL 或模型配置。
+
 ## MCP 查询服务
 
 Phase 2.3 将五项 AnalyticsService 查询能力发布为标准 MCP Tools：
@@ -133,6 +151,8 @@ PostgreSQL
 ```
 
 MCP Server 返回结构化 JSON，不负责自然语言回答；LangGraph Agent 则由 TimberOps 内部豆包模型选择工具并生成回答。两者共享只读 AnalyticsService，但彼此不依赖。
+
+Vue AI 助手只调用 FastAPI Agent API，不连接 MCP Server。MCP 仍是外部 Agent 使用的独立工具协议入口。
 
 本地启动和客户端连接方式见 [后端 README](backend/README.md)。
 
@@ -155,7 +175,7 @@ MCP Server 返回结构化 JSON，不负责自然语言回答；LangGraph Agent 
 
 ## 当前边界
 
-Phase 2.3 已完成 Vehicle、Customer、称重 REST API、Vue 磅房工作台、只读业务 Agent 和 MCP Server。订单、库存、鉴权、地磅设备、聊天前端、MCP 远程认证、RAG 与多 Agent 尚未实现。
+Phase 2.4 已完成 Vehicle、Customer、称重 REST API、Vue 磅房工作台、只读业务 Agent、MCP Server 和 AI 助手前端。订单、库存、鉴权、地磅设备、对话持久化、流式响应、MCP 远程认证、RAG 与多 Agent 尚未实现。
 
 ## License
 
