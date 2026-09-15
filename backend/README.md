@@ -1,6 +1,6 @@
 # TimberOps Backend
 
-TimberOps 后端负责 HTTP API、应用配置、数据库访问、称重领域能力和只读业务智能查询。当前完成 Phase 2.2：在既有称重闭环之上增加 LangGraph Agent，并通过豆包 / 火山方舟 OpenAI-compatible 接口提供模型能力。
+TimberOps 后端负责 HTTP API、应用配置、数据库访问、称重领域能力和只读业务智能查询。当前完成 Phase 2.3：除 LangGraph Agent 外，外部 Agent 还可通过标准 MCP Streamable HTTP 协议调用同一组查询能力。
 
 ## 技术栈
 
@@ -12,8 +12,10 @@ TimberOps 后端负责 HTTP API、应用配置、数据库访问、称重领域�
 - PostgreSQL（psycopg 3）
 - pytest
 - LangGraph、LangChain Core、LangChain OpenAI
+- MCP Python SDK
 
 Phase 2.2 已验证版本：LangGraph 1.2.11、LangChain Core 1.6.3、LangChain OpenAI 1.6.2。
+Phase 2.3 已验证 MCP Python SDK 2.2.0。
 
 ## 目录结构
 
@@ -34,10 +36,15 @@ backend/
 │   ├── models/              # 五个核心 SQLAlchemy 模型
 │   ├── schemas/             # Pydantic v2 输入/读取模型
 │   ├── services/            # 状态机服务与只读 AnalyticsService
-│   └── integrations/ai/
-│       ├── providers/       # 可替换的 LLM Provider 与豆包实现
-│       ├── tools/           # 只读称重业务工具
-│       └── agent/           # LangGraph 状态、Prompt 与 Graph
+│   └── integrations/
+│       ├── ai/
+│       │   ├── providers/   # 可替换的 LLM Provider 与豆包实现
+│       │   ├── tools/       # 只读称重业务工具
+│       │   └── agent/       # LangGraph 状态、Prompt 与 Graph
+│       └── mcp/
+│           ├── server.py    # 独立 Streamable HTTP ASGI Server
+│           ├── tools.py     # AnalyticsService 的 MCP 适配器
+│           └── schemas.py   # MCP 强类型结构化输出
 ├── migrations/
 │   ├── env.py               # Alembic 环境
 │   └── versions/            # 数据库版本脚本
@@ -62,6 +69,8 @@ DOUBAO_API_KEY=
 DOUBAO_BASE_URL=
 DOUBAO_MODEL=
 AI_TEMPERATURE=0
+MCP_HOST=127.0.0.1
+MCP_PORT=8001
 ```
 
 不要提交真实密码。项目根目录已提供 `.env.example`。
@@ -162,6 +171,48 @@ AI 默认关闭。只有调用 Agent API 时才检查 Provider 配置；缺少�
 
 LangGraph 使用单 Agent 循环：`START → Agent → (ToolNode → Agent)* → END`。首版不保存会话记忆。
 
+## MCP Server
+
+Phase 2.3 增加独立、无状态的 Streamable HTTP MCP Server：
+
+```text
+External Agent / MCP Client
+  ↓ Streamable HTTP
+TimberOps MCP Tools
+  ↓
+AnalyticsService
+  ↓
+SQLAlchemy / PostgreSQL
+```
+
+启动：
+
+```powershell
+python -m app.integrations.mcp.server
+```
+
+默认连接地址：`http://127.0.0.1:8001/mcp`。也可以将 ASGI 应用交给 Uvicorn：
+
+```powershell
+python -m uvicorn app.integrations.mcp.server:app --host 127.0.0.1 --port 8001
+```
+
+服务使用无状态 Streamable HTTP 和 JSON response，提供与 Agent 相同的五项查询能力。每个工具同时发布输入、输出 JSON Schema 和结构化结果，并带有 `readOnlyHint=true`、`openWorldHint=false` 标记。
+
+当前默认只监听本机地址，尚未实现公网身份认证；部署到非本机域名前必须先设计认证、授权、TLS 和允许的 Host/Origin。
+
+### MCP 与 LangGraph Agent 的区别
+
+| 能力 | LangGraph Agent | MCP Server |
+| --- | --- | --- |
+| 使用者 | TimberOps `/api/v1/ai/chat` | 外部 MCP Host / Agent |
+| 自然语言回答 | 由豆包生成 | 不生成，只返回结构化数据 |
+| 工具选择 | TimberOps 内部 LLM 自主选择 | 外部 MCP 客户端选择 |
+| 查询实现 | AnalyticsService | 同一个 AnalyticsService |
+| 数据写入 | 禁止 | 禁止 |
+
+MCP 层不依赖 LangGraph，也没有复制 SQL；两条入口只共享确定性的只读查询服务。
+
 领域错误统一返回：
 
 ```json
@@ -248,5 +299,6 @@ Phase 1.2 仍未把后端服务加入根目录 `docker-compose.yml`。在后续 
 - 可替换 LLM Provider 与豆包 Provider
 - LangGraph Tool Calling Agent 和 `/api/v1/ai/chat`
 - 不调用真实模型的 Stub Agent 测试
+- MCP Streamable HTTP Server、五个结构化查询工具和协议级测试
 
-未实现：用户、认证、RBAC、Order、Inventory、Material、磅单打印、真实设备、Agent 前端、MCP、RAG 和多 Agent。
+未实现：用户、认证、RBAC、Order、Inventory、Material、磅单打印、真实设备、Agent 前端、MCP 远程认证、RAG 和多 Agent。

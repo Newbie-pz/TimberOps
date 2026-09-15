@@ -35,6 +35,8 @@ class Settings(BaseSettings):
         le=2,
         validation_alias="AI_TEMPERATURE",
     )
+    mcp_host: str = Field(default="127.0.0.1", validation_alias="MCP_HOST")
+    mcp_port: int = Field(default=8001, ge=1, le=65535, validation_alias="MCP_PORT")
 
     model_config = SettingsConfigDict(
         env_file=("../.env", ".env"),

@@ -1,0 +1,1 @@
+"""Read-only Model Context Protocol integration for external Agents."""

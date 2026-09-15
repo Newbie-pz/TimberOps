@@ -2,7 +2,7 @@
 
 TimberOps 是面向中小型木材加工企业的智能运营与车辆称重管理平台。系统包含可独立运行的磅房模块，并逐步覆盖客户、订单、木材库存、出入库和审计。
 
-> 当前状态：Phase 2.2 Read-only Business Agent。车辆称重闭环、Vue 3 磅房工作台和只读 LangGraph 智能查询 API 已完成。
+> 当前状态：Phase 2.3 MCP Server。车辆称重闭环、Vue 3 磅房工作台、只读 LangGraph Agent 和 Streamable HTTP MCP 查询服务已完成。
 
 ## 业务定位
 
@@ -42,6 +42,7 @@ overweight_tons = max(gross_weight_tons - allowed_gross_weight_tons, 0)
 | 前端 | Vue 3、TypeScript、Vite、Element Plus |
 | 数据库 | PostgreSQL |
 | AI | LangGraph、LangChain Core、豆包 / 火山方舟 OpenAI-compatible API |
+| Agent 协议 | MCP Python SDK、Streamable HTTP |
 | 基础设施 | Docker Compose、Git |
 
 项目采用模块化单体架构。称重、订单和库存拥有各自业务边界，需要关联时通过显式应用用例协调，而不是由称重完成隐式修改库存。
@@ -59,7 +60,9 @@ TimberOps/
 │   │   ├── models/          # SQLAlchemy 核心模型
 │   │   ├── schemas/         # Pydantic 请求与响应模型
 │   │   ├── services/        # 业务用例与只读统计查询
-│   │   └── integrations/ai/ # Provider、Tools 与单 Agent Graph
+│   │   └── integrations/
+│   │       ├── ai/          # Provider、Tools 与单 Agent Graph
+│   │       └── mcp/         # 外部 Agent 的只读 MCP Server
 │   ├── migrations/          # Alembic 迁移
 │   └── tests/               # 自动化测试
 ├── frontend/                # Vue 3 磅房工作台
@@ -115,6 +118,24 @@ Agent 通过真实 Tool Calling 自主选择五个受控业务查询工具。工
 
 AI 默认关闭。配置方式和 API 示例见 [后端 README](backend/README.md)。
 
+## MCP 查询服务
+
+Phase 2.3 将五项 AnalyticsService 查询能力发布为标准 MCP Tools：
+
+```text
+External Agent
+  ↓ Streamable HTTP
+TimberOps MCP Server
+  ↓
+AnalyticsService
+  ↓
+PostgreSQL
+```
+
+MCP Server 返回结构化 JSON，不负责自然语言回答；LangGraph Agent 则由 TimberOps 内部豆包模型选择工具并生成回答。两者共享只读 AnalyticsService，但彼此不依赖。
+
+本地启动和客户端连接方式见 [后端 README](backend/README.md)。
+
 ## 文档
 
 - [系统架构](docs/architecture.md)
@@ -134,7 +155,7 @@ AI 默认关闭。配置方式和 API 示例见 [后端 README](backend/README.m
 
 ## 当前边界
 
-Phase 2.2 已完成 Vehicle、Customer、称重 REST API、Vue 磅房工作台和只读业务 Agent。订单、库存、鉴权、地磅设备、聊天前端、MCP、RAG 与多 Agent 尚未实现。
+Phase 2.3 已完成 Vehicle、Customer、称重 REST API、Vue 磅房工作台、只读业务 Agent 和 MCP Server。订单、库存、鉴权、地磅设备、聊天前端、MCP 远程认证、RAG 与多 Agent 尚未实现。
 
 ## License
 
