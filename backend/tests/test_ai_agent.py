@@ -13,7 +13,7 @@ from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 from langchain_core.tools import BaseTool
 from langchain_openai.chat_models.base import OpenAIConnectionError, OpenAITimeoutError
 from pydantic import ValidationError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings, get_settings
 from app.integrations.ai.agent.graph import AgentResult, TimberOpsAgent, ToolCallTrace
@@ -21,7 +21,6 @@ from app.integrations.ai.dependencies import get_ai_agent
 from app.integrations.ai.providers.doubao import DoubaoProvider
 from app.integrations.ai.tools.weighing_tools import build_weighing_tools
 from app.main import app
-from app.services.analytics_service import AnalyticsService
 
 
 class StubToolCallingModel:
@@ -86,7 +85,12 @@ def test_mock_agent_executes_tool_and_receives_structured_result(
     db_session: Session,
 ) -> None:
     model = StubToolCallingModel()
-    tools = build_weighing_tools(AnalyticsService(db_session))
+    session_factory = sessionmaker(
+        bind=db_session.get_bind(),
+        class_=Session,
+        expire_on_commit=False,
+    )
+    tools = build_weighing_tools(session_factory)
     agent = TimberOpsAgent(model, tools)
 
     result = asyncio.run(agent.achat("今天有多少称重任务？"))

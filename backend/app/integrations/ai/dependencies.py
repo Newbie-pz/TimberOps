@@ -1,21 +1,27 @@
 """FastAPI dependency wiring for the optional Agent integration."""
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
-from app.db.session import get_db
+from app.db.session import SessionLocal
 from app.integrations.ai.agent.graph import TimberOpsAgent
 from app.integrations.ai.providers.factory import create_llm_provider
-from app.integrations.ai.tools.weighing_tools import build_weighing_tools
-from app.services.analytics_service import AnalyticsService
+from app.integrations.ai.tools.weighing_tools import (
+    SessionFactory,
+    build_weighing_tools,
+)
+
+
+def get_ai_tool_session_factory() -> SessionFactory:
+    """Return the factory used only inside individual AI Tool executions."""
+    return SessionLocal
 
 
 def get_ai_agent(
-    session: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    session_factory: SessionFactory = Depends(get_ai_tool_session_factory),
 ) -> TimberOpsAgent:
-    """Build a request-scoped graph; validate provider settings only on AI calls."""
+    """Build an Agent without borrowing the FastAPI request database session."""
     provider = create_llm_provider(settings)
-    tools = build_weighing_tools(AnalyticsService(session))
+    tools = build_weighing_tools(session_factory)
     return TimberOpsAgent(provider.create_chat_model(), tools)
