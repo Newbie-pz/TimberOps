@@ -8,6 +8,7 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, event
+from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -20,10 +21,19 @@ os.environ.setdefault(
 
 import app.models  # noqa: F401  # Register all mapped tables.
 from app.db.session import get_db
+from app.api.dependencies import get_security_session_factory
 from app.db.base import Base
 from app.domain.enums import VehicleType
+from app.domain.rbac_catalog import (
+    PERMISSION_DEFINITIONS,
+    ROLE_DEFINITIONS,
+    ROLE_PERMISSION_CODES,
+)
 from app.main import app
 from app.models.billing import BillingRule
+from app.models.rbac import Permission, Role, RolePermission, UserRole
+from app.models.user import User
+from app.security.jwt import create_access_token
 
 
 @pytest.fixture
@@ -67,6 +77,26 @@ def db_engine() -> Generator[Engine, None, None]:
                 ),
             ]
         )
+        roles = {
+            name: Role(name=name, description=description)
+            for name, description in ROLE_DEFINITIONS
+        }
+        permissions = {
+            code: Permission(code=code, name=name, description=name)
+            for code, name in PERMISSION_DEFINITIONS
+        }
+        session.add_all([*roles.values(), *permissions.values()])
+        session.flush()
+        session.add_all(
+            [
+                RolePermission(
+                    role_id=roles[role_name].id,
+                    permission_id=permissions[permission_code].id,
+                )
+                for role_name, permission_codes in ROLE_PERMISSION_CODES.items()
+                for permission_code in permission_codes
+            ]
+        )
         session.commit()
     yield engine
     Base.metadata.drop_all(engine)
@@ -90,7 +120,27 @@ def api_client(db_engine: Engine) -> Generator[TestClient, None, None]:
         with testing_session() as session:
             yield session
 
+    with testing_session() as session:
+        admin_role = session.scalar(select(Role).where(Role.name == "ADMIN"))
+        assert admin_role is not None
+        admin_user = User(
+            username="test_admin",
+            password_hash="not-used-by-token-authentication",
+            real_name="测试管理员",
+        )
+        session.add(admin_user)
+        session.flush()
+        session.add(UserRole(user_id=admin_user.id, role_id=admin_role.id))
+        session.commit()
+        admin_token = create_access_token(
+            user_id=admin_user.id,
+            username=admin_user.username,
+        )
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_security_session_factory] = lambda: testing_session
     with TestClient(app) as client:
+        client.headers.update({"Authorization": f"Bearer {admin_token}"})
         yield client
     app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides.pop(get_security_session_factory, None)

@@ -12,6 +12,7 @@ from app.domain.exceptions import (
     ConflictError,
     InvalidStateError,
     NotFoundError,
+    PermissionDeniedError,
     ValidationError,
 )
 from app.integrations.ai.exceptions import (
@@ -72,6 +73,18 @@ async def authentication_error_handler(
         status_code=status.HTTP_401_UNAUTHORIZED,
         content=payload,
         headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+async def permission_denied_handler(
+    request: Request,
+    exc: PermissionDeniedError,
+) -> JSONResponse:
+    del request
+    return _error_response(
+        status_code=status.HTTP_403_FORBIDDEN,
+        code="PERMISSION_DENIED",
+        message=str(exc),
     )
 
 
@@ -164,6 +177,7 @@ def register_exception_handlers(application: FastAPI) -> None:
     """Register handlers once when constructing the application."""
     application.add_exception_handler(NotFoundError, resource_not_found_handler)
     application.add_exception_handler(AuthenticationError, authentication_error_handler)
+    application.add_exception_handler(PermissionDeniedError, permission_denied_handler)
     application.add_exception_handler(InvalidStateError, invalid_state_handler)
     application.add_exception_handler(CodedBusinessError, coded_business_error_handler)
     application.add_exception_handler(ConflictError, business_conflict_handler)

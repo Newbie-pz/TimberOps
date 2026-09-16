@@ -19,6 +19,7 @@ from app.schemas.weighing import (
     WeighingTaskCreate,
     WeighingTaskRead,
 )
+from app.security.permissions import require_permission
 from app.services.weighing_service import WeighingService
 
 
@@ -36,6 +37,7 @@ def cargo_catalog() -> dict[str, list[str]]:
     "/tasks",
     response_model=WeighingTaskRead,
     status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("weighing:create"))],
 )
 def create_task(data: WeighingTaskCreate, session: DbSession) -> object:
     return WeighingService(session).create_task(data)
@@ -77,7 +79,11 @@ def list_task_records(task_id: UUID, session: DbSession) -> object:
     return WeighingService(session).list_records(task_id)
 
 
-@router.post("/tasks/{task_id}/tare", response_model=WeighingTaskRead)
+@router.post(
+    "/tasks/{task_id}/tare",
+    response_model=WeighingTaskRead,
+    dependencies=[Depends(require_permission("weighing:tare"))],
+)
 def record_tare(
     task_id: UUID,
     data: TareWeightInput,
@@ -98,7 +104,11 @@ def finish_loading(task_id: UUID, session: DbSession) -> object:
     return WeighingService(session).finish_loading(task_id)
 
 
-@router.post("/tasks/{task_id}/gross", response_model=WeighingTaskRead)
+@router.post(
+    "/tasks/{task_id}/gross",
+    response_model=WeighingTaskRead,
+    dependencies=[Depends(require_permission("weighing:gross"))],
+)
 def record_gross(
     task_id: UUID,
     data: GrossWeightInput,
@@ -107,7 +117,11 @@ def record_gross(
     return WeighingService(session).record_gross(task_id, data)
 
 
-@router.post("/tasks/{task_id}/reweigh", response_model=WeighingTaskRead)
+@router.post(
+    "/tasks/{task_id}/reweigh",
+    response_model=WeighingTaskRead,
+    dependencies=[Depends(require_permission("weighing:gross"))],
+)
 def record_reweigh(
     task_id: UUID,
     data: ReweighInput,
@@ -116,12 +130,20 @@ def record_reweigh(
     return WeighingService(session).record_reweigh(task_id, data)
 
 
-@router.post("/tasks/{task_id}/complete", response_model=WeighingTaskRead)
+@router.post(
+    "/tasks/{task_id}/complete",
+    response_model=WeighingTaskRead,
+    dependencies=[Depends(require_permission("weighing:complete"))],
+)
 def complete_task(task_id: UUID, session: DbSession) -> object:
     return WeighingService(session).complete_task(task_id)
 
 
-@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/tasks/{task_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_permission("weighing:delete"))],
+)
 def delete_task(
     task_id: UUID,
     data: DeleteEntityInput,

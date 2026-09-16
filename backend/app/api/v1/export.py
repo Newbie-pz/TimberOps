@@ -12,13 +12,17 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.domain.enums import CargoType
 from app.services.export_service import ExportService
+from app.security.permissions import require_permission
 
 
 router = APIRouter(prefix="/export", tags=["export"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-@router.get("/weighing")
+@router.get(
+    "/weighing",
+    dependencies=[Depends(require_permission("export:data"))],
+)
 def export_weighing(
     session: DbSession,
     start_date: date | None = None,

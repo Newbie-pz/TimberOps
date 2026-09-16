@@ -5,17 +5,16 @@ from typing import Annotated
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings, get_settings
-from app.db.session import get_db
+from app.db.session import SessionLocal
 from app.domain.exceptions import AuthenticationError
 from app.models.user import User
 from app.security.jwt import TokenValidationError, decode_access_token
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
-DbSession = Annotated[Session, Depends(get_db)]
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 BearerCredentials = Annotated[
     HTTPAuthorizationCredentials | None,
@@ -23,10 +22,21 @@ BearerCredentials = Annotated[
 ]
 
 
+def get_security_session_factory() -> sessionmaker[Session]:
+    """Provide short-lived sessions for authentication and authorization only."""
+    return SessionLocal
+
+
+SecuritySessionFactory = Annotated[
+    sessionmaker[Session],
+    Depends(get_security_session_factory),
+]
+
+
 def get_current_user(
-    session: DbSession,
     settings: SettingsDependency,
     credentials: BearerCredentials,
+    session_factory: SecuritySessionFactory,
 ) -> User:
     """Resolve an active user from a verified Bearer access token."""
     if credentials is None or credentials.scheme.lower() != "bearer":
@@ -36,13 +46,15 @@ def get_current_user(
     except TokenValidationError as exc:
         raise AuthenticationError("Token 无效或已过期") from exc
 
-    user = session.scalar(
-        select(User).where(
-            User.id == claims.sub,
-            User.username == claims.username,
-            User.is_active.is_(True),
+    with session_factory() as session:
+        user = session.scalar(
+            select(User).where(
+                User.id == claims.sub,
+                User.username == claims.username,
+                User.is_active.is_(True),
+            )
         )
-    )
-    if user is None:
-        raise AuthenticationError("Token 对应的用户不存在或已停用")
-    return user
+        if user is None:
+            raise AuthenticationError("Token 对应的用户不存在或已停用")
+        session.expunge(user)
+        return user

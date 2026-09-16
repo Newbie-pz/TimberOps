@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.customer import CustomerCreate, CustomerRead, CustomerUpdate
 from app.schemas.lifecycle import DeleteEntityInput
+from app.security.permissions import require_permission
 from app.services.customer_service import CustomerService
 
 
@@ -40,7 +41,11 @@ def update_customer(
     return CustomerService(session).update_customer(customer_id, data)
 
 
-@router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{customer_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_permission("customer:delete"))],
+)
 def delete_customer(
     customer_id: UUID,
     data: DeleteEntityInput,

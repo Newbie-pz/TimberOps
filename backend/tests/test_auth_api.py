@@ -92,7 +92,10 @@ def test_me_with_valid_token_returns_current_user(api_client: TestClient) -> Non
 
 
 def test_me_without_token_is_rejected(api_client: TestClient) -> None:
-    response = api_client.get("/api/v1/auth/me")
+    response = api_client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": ""},
+    )
 
     assert response.status_code == 401
     assert response.headers["www-authenticate"] == "Bearer"

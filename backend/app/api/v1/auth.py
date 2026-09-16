@@ -10,7 +10,9 @@ from app.core.config import Settings, get_settings
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import LoginResponse, UserLogin, UserRead, UserRegister
+from app.schemas.rbac import PermissionRead, RoleRead
 from app.security.jwt import create_access_token
+from app.services.rbac_service import RBACService
 from app.services.user_service import UserService
 
 
@@ -53,3 +55,19 @@ def login(
 @router.get("/me", response_model=UserRead)
 def me(current_user: CurrentUser) -> object:
     return current_user
+
+
+@router.get("/roles", response_model=list[RoleRead])
+def current_user_roles(
+    current_user: CurrentUser,
+    session: DbSession,
+) -> object:
+    return RBACService(session).list_user_roles(current_user.id)
+
+
+@router.get("/permissions", response_model=list[PermissionRead])
+def current_user_permissions(
+    current_user: CurrentUser,
+    session: DbSession,
+) -> object:
+    return RBACService(session).list_user_permissions(current_user.id)

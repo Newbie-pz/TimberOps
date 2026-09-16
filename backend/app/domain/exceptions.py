@@ -29,6 +29,10 @@ class AuthenticationError(DomainError):
     """Credentials or bearer-token authentication failed."""
 
 
+class PermissionDeniedError(DomainError):
+    """An authenticated identity lacks a required permission."""
+
+
 class CodedBusinessError(BusinessRuleError):
     """A business failure whose stable code is part of the public API contract."""
 

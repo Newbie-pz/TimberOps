@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.schemas.lifecycle import DeleteEntityInput
+from app.security.permissions import require_permission
 from app.services.vehicle_service import VehicleService
 
 
@@ -40,7 +41,11 @@ def update_vehicle(
     return VehicleService(session).update_vehicle(vehicle_id, data)
 
 
-@router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{vehicle_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_permission("vehicle:delete"))],
+)
 def delete_vehicle(
     vehicle_id: UUID,
     data: DeleteEntityInput,

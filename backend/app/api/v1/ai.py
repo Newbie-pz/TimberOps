@@ -20,12 +20,17 @@ from app.integrations.ai.exceptions import (
     AIUpstreamTimeoutError,
 )
 from app.schemas.ai import AIChatRequest, AIChatResponse, AIToolCallRead
+from app.security.permissions import require_permission
 
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
 
-@router.post("/chat", response_model=AIChatResponse)
+@router.post(
+    "/chat",
+    response_model=AIChatResponse,
+    dependencies=[Depends(require_permission("ai:query"))],
+)
 async def chat(
     payload: AIChatRequest,
     request: Request,

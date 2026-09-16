@@ -14,6 +14,26 @@ export type WeightType = 'TARE' | 'GROSS' | 'REWEIGH'
 export type WeightSource = 'MANUAL' | 'DEVICE'
 export type VehicleType = 'SMALL' | 'MEDIUM' | 'LARGE'
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'WAIVED'
+export type PermissionCode =
+  | 'vehicle:create'
+  | 'vehicle:update'
+  | 'vehicle:delete'
+  | 'vehicle:view'
+  | 'customer:create'
+  | 'customer:update'
+  | 'customer:delete'
+  | 'customer:view'
+  | 'weighing:create'
+  | 'weighing:tare'
+  | 'weighing:gross'
+  | 'weighing:complete'
+  | 'weighing:delete'
+  | 'weighing:view'
+  | 'billing:view'
+  | 'billing:update'
+  | 'export:data'
+  | 'ai:query'
+  | 'user:manage'
 
 export interface Vehicle {
   id: string
@@ -108,6 +128,22 @@ export interface LoginResponse {
   access_token: string
   token_type: 'Bearer'
   expires_in: number
+}
+
+export interface Role {
+  id: string
+  name: 'ADMIN' | 'OPERATOR' | 'VIEWER'
+  description: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Permission {
+  id: string
+  code: PermissionCode
+  name: string
+  description: string | null
+  created_at: string
 }
 
 export interface WeighingTaskCreate {
