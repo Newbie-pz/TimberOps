@@ -237,7 +237,9 @@ def test_cancelled_task_cannot_continue_and_reason_is_audited(
     )
 
     assert task.status is WeighingStatus.CANCELLED
-    audit = db_session.scalar(select(AuditLog))
+    audit = db_session.scalar(
+        select(AuditLog).where(AuditLog.action == "WEIGHING_TASK_CANCELLED")
+    )
     assert audit is not None
     assert audit.reason == "车辆选择错误"
     assert audit.before_value == {"status": "WAIT_TARE"}

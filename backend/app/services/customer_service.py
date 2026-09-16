@@ -56,7 +56,13 @@ class CustomerService:
         self._session.refresh(customer)
         return customer
 
-    def delete_customer(self, customer_id: UUID, data: DeleteEntityInput) -> None:
+    def delete_customer(
+        self,
+        customer_id: UUID,
+        data: DeleteEntityInput,
+        *,
+        operator_id: UUID | None = None,
+    ) -> None:
         customer = self._session.scalar(
             select(Customer)
             .where(
@@ -78,7 +84,7 @@ class CustomerService:
         customer.deleted_at = utc_now()
         self._session.add(
             AuditLog(
-                operator_id=data.operator_id,
+                operator_id=operator_id,
                 action="CUSTOMER_DELETED",
                 target_type="Customer",
                 target_id=customer.id,

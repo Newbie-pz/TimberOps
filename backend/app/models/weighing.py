@@ -136,6 +136,10 @@ class WeighingTask(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     tare_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     gross_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        index=True,
+    )
     version: Mapped[int] = mapped_column(Integer, default=1)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     deleted_by: Mapped[UUID | None]

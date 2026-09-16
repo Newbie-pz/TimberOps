@@ -52,7 +52,8 @@ def test_delete_vehicle_without_history_soft_deletes_and_audits(
 
     VehicleService(db_session).delete_vehicle(
         vehicle.id,
-        DeleteEntityInput(reason="重复档案", operator_id=operator_id),
+        DeleteEntityInput(reason="重复档案"),
+        operator_id=operator_id,
     )
 
     assert vehicle.deleted_at is not None
@@ -107,7 +108,8 @@ def test_delete_unfinished_task_soft_deletes_and_audits(
 
     WeighingService(db_session).delete_task(
         task.id,
-        DeleteEntityInput(reason="录入车辆错误", operator_id=operator_id),
+        DeleteEntityInput(reason="录入车辆错误"),
+        operator_id=operator_id,
     )
 
     assert task.deleted_at is not None

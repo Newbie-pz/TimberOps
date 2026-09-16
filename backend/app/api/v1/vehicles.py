@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models.user import User
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.schemas.lifecycle import DeleteEntityInput
 from app.security.permissions import require_permission
@@ -44,11 +45,18 @@ def update_vehicle(
 @router.delete(
     "/{vehicle_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("vehicle:delete"))],
 )
 def delete_vehicle(
     vehicle_id: UUID,
     data: DeleteEntityInput,
     session: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("vehicle:delete")),
+    ],
 ) -> None:
-    VehicleService(session).delete_vehicle(vehicle_id, data)
+    VehicleService(session).delete_vehicle(
+        vehicle_id,
+        data,
+        operator_id=current_user.id,
+    )

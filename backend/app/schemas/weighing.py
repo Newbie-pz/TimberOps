@@ -127,6 +127,7 @@ class WeighingTaskRead(BaseModel):
     tare_time: datetime | None
     gross_time: datetime | None
     completed_at: datetime | None
+    created_by: UUID | None
     version: int
     created_at: datetime
     updated_at: datetime

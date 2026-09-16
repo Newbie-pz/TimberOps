@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.domain.cargo_catalog import get_cargo_catalog
 from app.domain.enums import CargoType, PaymentStatus, WeighingStatus
+from app.models.user import User
 from app.schemas.lifecycle import DeleteEntityInput
 from app.schemas.weighing import (
     GrossWeightInput,
@@ -37,10 +38,16 @@ def cargo_catalog() -> dict[str, list[str]]:
     "/tasks",
     response_model=WeighingTaskRead,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("weighing:create"))],
 )
-def create_task(data: WeighingTaskCreate, session: DbSession) -> object:
-    return WeighingService(session).create_task(data)
+def create_task(
+    data: WeighingTaskCreate,
+    session: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("weighing:create")),
+    ],
+) -> object:
+    return WeighingService(session).create_task(data, operator_id=current_user.id)
 
 
 @router.get("/tasks", response_model=list[WeighingTaskRead])
@@ -82,14 +89,21 @@ def list_task_records(task_id: UUID, session: DbSession) -> object:
 @router.post(
     "/tasks/{task_id}/tare",
     response_model=WeighingTaskRead,
-    dependencies=[Depends(require_permission("weighing:tare"))],
 )
 def record_tare(
     task_id: UUID,
     data: TareWeightInput,
     session: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("weighing:tare")),
+    ],
 ) -> object:
-    return WeighingService(session).record_tare(task_id, data)
+    return WeighingService(session).record_tare(
+        task_id,
+        data,
+        operator_id=current_user.id,
+    )
 
 
 @router.post("/tasks/{task_id}/loading", response_model=WeighingTaskRead)
@@ -107,46 +121,76 @@ def finish_loading(task_id: UUID, session: DbSession) -> object:
 @router.post(
     "/tasks/{task_id}/gross",
     response_model=WeighingTaskRead,
-    dependencies=[Depends(require_permission("weighing:gross"))],
 )
 def record_gross(
     task_id: UUID,
     data: GrossWeightInput,
     session: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("weighing:gross")),
+    ],
 ) -> object:
-    return WeighingService(session).record_gross(task_id, data)
+    return WeighingService(session).record_gross(
+        task_id,
+        data,
+        operator_id=current_user.id,
+    )
 
 
 @router.post(
     "/tasks/{task_id}/reweigh",
     response_model=WeighingTaskRead,
-    dependencies=[Depends(require_permission("weighing:gross"))],
 )
 def record_reweigh(
     task_id: UUID,
     data: ReweighInput,
     session: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("weighing:gross")),
+    ],
 ) -> object:
-    return WeighingService(session).record_reweigh(task_id, data)
+    return WeighingService(session).record_reweigh(
+        task_id,
+        data,
+        operator_id=current_user.id,
+    )
 
 
 @router.post(
     "/tasks/{task_id}/complete",
     response_model=WeighingTaskRead,
-    dependencies=[Depends(require_permission("weighing:complete"))],
 )
-def complete_task(task_id: UUID, session: DbSession) -> object:
-    return WeighingService(session).complete_task(task_id)
+def complete_task(
+    task_id: UUID,
+    session: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("weighing:complete")),
+    ],
+) -> object:
+    return WeighingService(session).complete_task(
+        task_id,
+        operator_id=current_user.id,
+    )
 
 
 @router.delete(
     "/tasks/{task_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("weighing:delete"))],
 )
 def delete_task(
     task_id: UUID,
     data: DeleteEntityInput,
     session: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("weighing:delete")),
+    ],
 ) -> None:
-    WeighingService(session).delete_task(task_id, data)
+    WeighingService(session).delete_task(
+        task_id,
+        data,
+        operator_id=current_user.id,
+    )

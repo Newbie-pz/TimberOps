@@ -91,7 +91,13 @@ class VehicleService:
         self._session.refresh(vehicle)
         return vehicle
 
-    def delete_vehicle(self, vehicle_id: UUID, data: DeleteEntityInput) -> None:
+    def delete_vehicle(
+        self,
+        vehicle_id: UUID,
+        data: DeleteEntityInput,
+        *,
+        operator_id: UUID | None = None,
+    ) -> None:
         vehicle = self._session.scalar(
             select(Vehicle)
             .where(
@@ -113,7 +119,7 @@ class VehicleService:
         vehicle.deleted_at = utc_now()
         self._session.add(
             AuditLog(
-                operator_id=data.operator_id,
+                operator_id=operator_id,
                 action="VEHICLE_DELETED",
                 target_type="Vehicle",
                 target_id=vehicle.id,

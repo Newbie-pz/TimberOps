@@ -63,7 +63,12 @@ class WeighingService:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def create_task(self, data: WeighingTaskCreate) -> WeighingTask:
+    def create_task(
+        self,
+        data: WeighingTaskCreate,
+        *,
+        operator_id: UUID | None = None,
+    ) -> WeighingTask:
         vehicle = self._session.scalar(
             select(Vehicle)
             .where(
@@ -92,6 +97,7 @@ class WeighingService:
         if data.weighing_direction is not WeighingDirection.OUTBOUND:
             raise BusinessRuleError("V1 only supports OUTBOUND weighing")
         task = WeighingTask(
+            id=uuid4(),
             task_no=self._new_task_no(),
             vehicle_id=vehicle.id,
             customer_id=data.customer_id,
@@ -107,9 +113,21 @@ class WeighingService:
             overweight_tons=Decimal("0.000"),
             status=WeighingStatus.WAIT_TARE,
             weight_result=WeightResult.PENDING,
+            created_by=operator_id,
             version=1,
         )
         self._session.add(task)
+        self._session.add(
+            AuditLog(
+                operator_id=operator_id,
+                action="WEIGHING_TASK_CREATED",
+                target_type="WeighingTask",
+                target_id=task.id,
+                before_value=None,
+                after_value={"status": WeighingStatus.WAIT_TARE.value},
+                reason=None,
+            )
+        )
         self._commit("could not create weighing task")
         self._session.refresh(task)
         return task
@@ -187,6 +205,20 @@ class WeighingService:
         task.tare_time = now
         task.status = WeighingStatus.TARE_COMPLETED
         task.version += 1
+        self._session.add(
+            AuditLog(
+                operator_id=operator_id,
+                action="TARE_RECORDED",
+                target_type="WeighingTask",
+                target_id=task.id,
+                before_value={"status": WeighingStatus.WAIT_TARE.value},
+                after_value={
+                    "status": task.status.value,
+                    "weight_tons": str(weight),
+                },
+                reason=None,
+            )
+        )
         self._commit("could not record tare weight")
         return task
 
@@ -253,7 +285,12 @@ class WeighingService:
             remark=data.remark,
         )
 
-    def complete_task(self, task_id: UUID) -> WeighingTask:
+    def complete_task(
+        self,
+        task_id: UUID,
+        *,
+        operator_id: UUID | None = None,
+    ) -> WeighingTask:
         task = self._get_task_for_update(task_id)
         if task.weight_result is not WeightResult.NORMAL:
             raise BusinessRuleError("only a NORMAL weighing task can be completed")
@@ -266,10 +303,27 @@ class WeighingService:
             task,
             completed_at=completed_at,
         )
+        self._session.add(
+            AuditLog(
+                operator_id=operator_id,
+                action="WEIGHING_TASK_COMPLETED",
+                target_type="WeighingTask",
+                target_id=task.id,
+                before_value={"status": WeighingStatus.GROSS_COMPLETED.value},
+                after_value={"status": WeighingStatus.COMPLETED.value},
+                reason=None,
+            )
+        )
         self._commit("could not complete weighing task")
         return task
 
-    def delete_task(self, task_id: UUID, data: DeleteEntityInput) -> None:
+    def delete_task(
+        self,
+        task_id: UUID,
+        data: DeleteEntityInput,
+        *,
+        operator_id: UUID | None = None,
+    ) -> None:
         task = self._get_task_for_update(task_id)
         if task.status not in self._DELETABLE_STATUSES:
             raise InvalidStateError(
@@ -277,11 +331,11 @@ class WeighingService:
             )
 
         task.deleted_at = utc_now()
-        task.deleted_by = data.operator_id
+        task.deleted_by = operator_id
         task.delete_reason = data.reason
         self._session.add(
             AuditLog(
-                operator_id=data.operator_id,
+                operator_id=operator_id,
                 action="WEIGHING_TASK_DELETED",
                 target_type="WeighingTask",
                 target_id=task.id,
@@ -364,6 +418,26 @@ class WeighingService:
             else WeighingStatus.WAIT_GROSS
         )
         task.version += 1
+        action = (
+            "REWEIGH_RECORDED"
+            if weight_type is WeightType.REWEIGH
+            else "GROSS_RECORDED"
+        )
+        self._session.add(
+            AuditLog(
+                operator_id=operator_id,
+                action=action,
+                target_type="WeighingTask",
+                target_id=task.id,
+                before_value={"status": WeighingStatus.WAIT_GROSS.value},
+                after_value={
+                    "status": task.status.value,
+                    "weight_tons": str(calculation.gross_weight_tons),
+                    "weight_result": task.weight_result.value,
+                },
+                reason=remark if weight_type is WeightType.REWEIGH else None,
+            )
+        )
         self._commit("could not record gross weight")
         return task
 
