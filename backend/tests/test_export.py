@@ -19,6 +19,7 @@ def _vehicle(client: TestClient, plate_number: str) -> dict[str, object]:
         json={
             "plate_number": plate_number,
             "driver_name": "张师傅",
+            "vehicle_type": "LARGE",
             "allowed_gross_weight_tons": "49.000",
         },
     )

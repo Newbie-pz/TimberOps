@@ -6,14 +6,14 @@ import { Plus, Refresh } from '@element-plus/icons-vue'
 import { createVehicle, listVehicles, updateVehicle } from '@/api/vehicle'
 import PageHeader from '@/components/PageHeader.vue'
 import WeightValue from '@/components/WeightValue.vue'
-import type { Vehicle, VehicleCreate, VehicleUpdate } from '@/types'
-import { isValidTons } from '@/utils/format'
+import type { Vehicle, VehicleCreate, VehicleType, VehicleUpdate } from '@/types'
+import { isValidTons, vehicleTypeLabel } from '@/utils/format'
 
 interface VehicleForm {
   plate_number: string
   driver_name: string
   driver_phone: string
-  vehicle_type: string
+  vehicle_type: VehicleType | ''
   allowed_gross_weight_tons: string
   remark: string
 }
@@ -34,6 +34,7 @@ const form = reactive<VehicleForm>({
 })
 const rules: FormRules<VehicleForm> = {
   plate_number: [{ required: true, message: '请输入车牌号', trigger: 'blur' }],
+  vehicle_type: [{ required: true, message: '请选择车辆类型', trigger: 'change' }],
   allowed_gross_weight_tons: [
     { required: true, message: '请输入核定总质量', trigger: 'blur' },
     {
@@ -90,7 +91,7 @@ async function submit(): Promise<void> {
   const common: VehicleUpdate = {
     driver_name: form.driver_name || null,
     driver_phone: form.driver_phone || null,
-    vehicle_type: form.vehicle_type || null,
+    vehicle_type: form.vehicle_type as VehicleType,
     allowed_gross_weight_tons: form.allowed_gross_weight_tons,
     remark: form.remark || null,
   }
@@ -126,7 +127,9 @@ onMounted(loadVehicles)
       </el-table-column>
       <el-table-column prop="driver_name" label="司机" min-width="110" />
       <el-table-column prop="driver_phone" label="联系电话" min-width="140" />
-      <el-table-column prop="vehicle_type" label="车辆类型" min-width="130" />
+      <el-table-column label="车辆类型" min-width="130">
+        <template #default="{ row }">{{ row.vehicle_type ? vehicleTypeLabel[row.vehicle_type as VehicleType] : `待标准化${row.vehicle_type_legacy ? `（原值：${row.vehicle_type_legacy}）` : ''}` }}</template>
+      </el-table-column>
       <el-table-column label="核定总质量" min-width="140">
         <template #default="{ row }"><WeightValue :value="row.allowed_gross_weight_tons" /></template>
       </el-table-column>
@@ -149,7 +152,13 @@ onMounted(loadVehicles)
         </el-form-item>
         <el-form-item label="司机姓名"><el-input v-model="form.driver_name" /></el-form-item>
         <el-form-item label="联系电话"><el-input v-model="form.driver_phone" /></el-form-item>
-        <el-form-item label="车辆类型"><el-input v-model="form.vehicle_type" placeholder="重型货车" /></el-form-item>
+        <el-form-item label="车辆类型" prop="vehicle_type">
+          <el-select v-model="form.vehicle_type" placeholder="请选择车辆类型" style="width: 100%">
+            <el-option label="小型货车" value="SMALL" />
+            <el-option label="中型货车" value="MEDIUM" />
+            <el-option label="大型货车" value="LARGE" />
+          </el-select>
+        </el-form-item>
       </div>
       <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="2" /></el-form-item>
     </el-form>

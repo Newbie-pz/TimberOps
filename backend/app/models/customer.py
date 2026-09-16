@@ -1,8 +1,9 @@
 """Customer persistence model."""
 
 from typing import TYPE_CHECKING
+from datetime import datetime
 
-from sqlalchemy import String, Text
+from sqlalchemy import DateTime, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -20,6 +21,7 @@ class Customer(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     contact_name: Mapped[str | None] = mapped_column(String(100))
     phone: Mapped[str | None] = mapped_column(String(32))
     remark: Mapped[str | None] = mapped_column(Text)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
 
     weighing_tasks: Mapped[list["WeighingTask"]] = relationship(
         back_populates="customer"

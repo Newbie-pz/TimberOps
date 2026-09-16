@@ -12,13 +12,16 @@ export type WeighingStatus =
 export type WeightResult = 'PENDING' | 'NORMAL' | 'OVERWEIGHT'
 export type WeightType = 'TARE' | 'GROSS' | 'REWEIGH'
 export type WeightSource = 'MANUAL' | 'DEVICE'
+export type VehicleType = 'SMALL' | 'MEDIUM' | 'LARGE'
+export type PaymentStatus = 'UNPAID' | 'PAID' | 'WAIVED'
 
 export interface Vehicle {
   id: string
   plate_number: string
   driver_name: string | null
   driver_phone: string | null
-  vehicle_type: string | null
+  vehicle_type: VehicleType | null
+  vehicle_type_legacy: string | null
   allowed_gross_weight_tons: Tons
   remark: string | null
   created_at: string
@@ -29,7 +32,7 @@ export interface VehicleCreate {
   plate_number: string
   driver_name?: string | null
   driver_phone?: string | null
-  vehicle_type?: string | null
+  vehicle_type: VehicleType
   allowed_gross_weight_tons: Tons
   remark?: string | null
 }
@@ -44,6 +47,17 @@ export interface Customer {
   remark: string | null
   created_at: string
   updated_at: string
+  billing_record: BillingRecord | null
+}
+
+export interface BillingRecord {
+  id: string
+  weighing_task_id: string
+  vehicle_id: string
+  vehicle_type_snapshot: VehicleType
+  fee_amount: string
+  payment_status: PaymentStatus
+  created_at: string
 }
 
 export interface CustomerCreate {
@@ -112,6 +126,7 @@ export interface WeighingTaskFilters {
   cargo_type?: CargoType
   status?: WeighingStatus
   vehicle_id?: string
+  payment_status?: PaymentStatus
 }
 
 export type CargoCatalog = Record<CargoType, string[]>

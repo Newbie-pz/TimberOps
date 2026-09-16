@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
+from app.schemas.lifecycle import DeleteEntityInput
 from app.services.vehicle_service import VehicleService
 
 
@@ -37,3 +38,12 @@ def update_vehicle(
     session: DbSession,
 ) -> object:
     return VehicleService(session).update_vehicle(vehicle_id, data)
+
+
+@router.delete("/{vehicle_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_vehicle(
+    vehicle_id: UUID,
+    data: DeleteEntityInput,
+    session: DbSession,
+) -> None:
+    VehicleService(session).delete_vehicle(vehicle_id, data)

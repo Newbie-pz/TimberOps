@@ -6,11 +6,12 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.db.base import utc_now
 from app.domain.enums import (
     CargoType,
+    PaymentStatus,
     WeighingDirection,
     WeighingStatus,
     WeightResult,
@@ -25,9 +26,11 @@ from app.domain.exceptions import (
 )
 from app.domain.weighing import calculate_weight, quantize_tons
 from app.models.audit_log import AuditLog
+from app.models.billing import BillingRecord
 from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingRecord, WeighingTask
+from app.schemas.lifecycle import DeleteEntityInput
 from app.schemas.weighing import (
     CancelWeighingTaskInput,
     GrossWeightInput,
@@ -35,6 +38,7 @@ from app.schemas.weighing import (
     TareWeightInput,
     WeighingTaskCreate,
 )
+from app.services.billing_service import BillingService
 
 
 class WeighingService:
@@ -48,16 +52,41 @@ class WeighingService:
             WeighingStatus.GROSS_COMPLETED,
         }
     )
+    _DELETABLE_STATUSES = frozenset(
+        {
+            WeighingStatus.WAIT_TARE,
+            WeighingStatus.TARE_COMPLETED,
+            WeighingStatus.WAIT_GROSS,
+        }
+    )
 
     def __init__(self, session: Session) -> None:
         self._session = session
 
     def create_task(self, data: WeighingTaskCreate) -> WeighingTask:
-        vehicle = self._session.get(Vehicle, data.vehicle_id)
+        vehicle = self._session.scalar(
+            select(Vehicle)
+            .where(
+                Vehicle.id == data.vehicle_id,
+                Vehicle.deleted_at.is_(None),
+            )
+            .with_for_update()
+        )
         if vehicle is None:
             raise NotFoundError(f"vehicle not found: {data.vehicle_id}")
+        if vehicle.vehicle_type is None:
+            raise BusinessRuleError(
+                "vehicle type must be standardized before creating a weighing task"
+            )
         if data.customer_id is not None:
-            customer = self._session.get(Customer, data.customer_id)
+            customer = self._session.scalar(
+                select(Customer)
+                .where(
+                    Customer.id == data.customer_id,
+                    Customer.deleted_at.is_(None),
+                )
+                .with_for_update()
+            )
             if customer is None:
                 raise NotFoundError(f"customer not found: {data.customer_id}")
         if data.weighing_direction is not WeighingDirection.OUTBOUND:
@@ -87,7 +116,14 @@ class WeighingService:
 
     def get_task(self, task_id: UUID) -> WeighingTask:
         """Return one task without changing its state."""
-        task = self._session.get(WeighingTask, task_id)
+        task = self._session.scalar(
+            select(WeighingTask)
+            .options(selectinload(WeighingTask.billing_record))
+            .where(
+                WeighingTask.id == task_id,
+                WeighingTask.deleted_at.is_(None),
+            )
+        )
         if task is None:
             raise NotFoundError(f"weighing task not found: {task_id}")
         return task
@@ -98,15 +134,22 @@ class WeighingService:
         cargo_type: CargoType | None = None,
         status: WeighingStatus | None = None,
         vehicle_id: UUID | None = None,
+        payment_status: PaymentStatus | None = None,
     ) -> list[WeighingTask]:
         """List tasks using the simple filters supported by API V1."""
-        statement = select(WeighingTask)
+        statement = select(WeighingTask).options(
+            selectinload(WeighingTask.billing_record)
+        ).where(WeighingTask.deleted_at.is_(None))
         if cargo_type is not None:
             statement = statement.where(WeighingTask.cargo_type == cargo_type)
         if status is not None:
             statement = statement.where(WeighingTask.status == status)
         if vehicle_id is not None:
             statement = statement.where(WeighingTask.vehicle_id == vehicle_id)
+        if payment_status is not None:
+            statement = statement.join(WeighingTask.billing_record).where(
+                BillingRecord.payment_status == payment_status
+            )
         statement = statement.order_by(WeighingTask.created_at, WeighingTask.id)
         return list(self._session.scalars(statement))
 
@@ -216,10 +259,41 @@ class WeighingService:
             raise BusinessRuleError("only a NORMAL weighing task can be completed")
         self._require_status(task, WeighingStatus.GROSS_COMPLETED)
         task.status = WeighingStatus.COMPLETED
-        task.completed_at = utc_now()
+        completed_at = utc_now()
+        task.completed_at = completed_at
         task.version += 1
+        BillingService(self._session).ensure_record_for_completed_task(
+            task,
+            completed_at=completed_at,
+        )
         self._commit("could not complete weighing task")
         return task
+
+    def delete_task(self, task_id: UUID, data: DeleteEntityInput) -> None:
+        task = self._get_task_for_update(task_id)
+        if task.status not in self._DELETABLE_STATUSES:
+            raise InvalidStateError(
+                f"task in {task.status.value} cannot be deleted"
+            )
+
+        task.deleted_at = utc_now()
+        task.deleted_by = data.operator_id
+        task.delete_reason = data.reason
+        self._session.add(
+            AuditLog(
+                operator_id=data.operator_id,
+                action="WEIGHING_TASK_DELETED",
+                target_type="WeighingTask",
+                target_id=task.id,
+                before_value={"status": task.status.value, "deleted_at": None},
+                after_value={
+                    "status": task.status.value,
+                    "deleted_at": task.deleted_at.isoformat(),
+                },
+                reason=data.reason,
+            )
+        )
+        self._commit("could not delete weighing task")
 
     def cancel_task(
         self,
@@ -297,6 +371,7 @@ class WeighingService:
         task = self._session.scalar(
             select(WeighingTask)
             .where(WeighingTask.id == task_id)
+            .where(WeighingTask.deleted_at.is_(None))
             .with_for_update()
         )
         if task is None:

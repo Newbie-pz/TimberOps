@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.domain.exceptions import (
     BusinessRuleError,
+    CodedBusinessError,
     ConflictError,
     InvalidStateError,
     NotFoundError,
@@ -82,6 +83,18 @@ async def business_conflict_handler(
     )
 
 
+async def coded_business_error_handler(
+    request: Request,
+    exc: CodedBusinessError,
+) -> JSONResponse:
+    del request
+    return _error_response(
+        status_code=status.HTTP_409_CONFLICT,
+        code=exc.code,
+        message=str(exc),
+    )
+
+
 async def ai_service_unavailable_handler(
     request: Request,
     exc: AIServiceUnavailableError,
@@ -135,6 +148,7 @@ def register_exception_handlers(application: FastAPI) -> None:
     """Register handlers once when constructing the application."""
     application.add_exception_handler(NotFoundError, resource_not_found_handler)
     application.add_exception_handler(InvalidStateError, invalid_state_handler)
+    application.add_exception_handler(CodedBusinessError, coded_business_error_handler)
     application.add_exception_handler(ConflictError, business_conflict_handler)
     application.add_exception_handler(BusinessRuleError, business_conflict_handler)
     application.add_exception_handler(ValidationError, business_conflict_handler)

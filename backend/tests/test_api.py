@@ -15,6 +15,7 @@ def create_vehicle(
         json={
             "plate_number": plate_number,
             "driver_name": "张师傅",
+            "vehicle_type": "LARGE",
             "allowed_gross_weight_tons": "49.000",
         },
     )
@@ -73,6 +74,7 @@ def test_duplicate_vehicle_plate_returns_business_conflict(
         "/api/v1/vehicles",
         json={
             "plate_number": "蒙H12345",
+            "vehicle_type": "LARGE",
             "allowed_gross_weight_tons": "49.000",
         },
     )

@@ -12,6 +12,22 @@ class CargoType(StrEnum):
     OTHER = "OTHER"
 
 
+class VehicleType(StrEnum):
+    """Standard vehicle classes used by operations and billing."""
+
+    SMALL = "SMALL"
+    MEDIUM = "MEDIUM"
+    LARGE = "LARGE"
+
+
+class PaymentStatus(StrEnum):
+    """Billing state; external payment processing is intentionally out of scope."""
+
+    UNPAID = "UNPAID"
+    PAID = "PAID"
+    WAIVED = "WAIVED"
+
+
 class WeighingStatus(StrEnum):
     """Lifecycle state of a weighing task."""
 

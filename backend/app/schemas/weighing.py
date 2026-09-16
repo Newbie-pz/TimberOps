@@ -15,6 +15,7 @@ from app.domain.enums import (
     WeightSource,
     WeightType,
 )
+from app.schemas.billing import BillingRecordRead
 
 
 PositiveWeight = Annotated[
@@ -129,6 +130,7 @@ class WeighingTaskRead(BaseModel):
     version: int
     created_at: datetime
     updated_at: datetime
+    billing_record: BillingRecordRead | None = None
 
 
 class TaskDetailResponse(BaseModel):

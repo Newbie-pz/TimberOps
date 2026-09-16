@@ -9,7 +9,7 @@ import { exportWeighingHistory, listWeighingTasks } from '@/api/weighing'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import WeightValue from '@/components/WeightValue.vue'
-import type { CargoType, Vehicle, WeighingExportFilters, WeighingStatus, WeighingTask, WeighingTaskFilters } from '@/types'
+import type { CargoType, PaymentStatus, Vehicle, WeighingExportFilters, WeighingStatus, WeighingTask, WeighingTaskFilters } from '@/types'
 import { cargoTypeLabel, formatDateTime, statusLabel } from '@/utils/format'
 
 const router = useRouter()
@@ -20,9 +20,10 @@ const exporting = ref(false)
 const filters = reactive<{
   cargo_type: CargoType | ''
   status: WeighingStatus | ''
+  payment_status: PaymentStatus | ''
   vehicle_id: string
   date_range: string[]
-}>({ cargo_type: '', status: '', vehicle_id: '', date_range: [] })
+}>({ cargo_type: '', status: '', payment_status: '', vehicle_id: '', date_range: [] })
 const vehicleMap = computed(() => new Map(vehicles.value.map((item) => [item.id, item.plate_number])))
 const cargoOptions: CargoType[] = ['ORE', 'COAL', 'TIMBER', 'OTHER']
 const statusOptions: WeighingStatus[] = [
@@ -36,6 +37,7 @@ async function load(): Promise<void> {
   if (filters.cargo_type) query.cargo_type = filters.cargo_type as CargoType
   if (filters.status) query.status = filters.status as WeighingStatus
   if (filters.vehicle_id) query.vehicle_id = filters.vehicle_id
+  if (filters.payment_status) query.payment_status = filters.payment_status
   try {
     tasks.value = await listWeighingTasks(query)
   } finally {
@@ -44,7 +46,7 @@ async function load(): Promise<void> {
 }
 
 function reset(): void {
-  Object.assign(filters, { cargo_type: '', status: '', vehicle_id: '', date_range: [] })
+  Object.assign(filters, { cargo_type: '', status: '', payment_status: '', vehicle_id: '', date_range: [] })
   void load()
 }
 
@@ -102,6 +104,13 @@ onMounted(async () => {
           <el-option v-for="vehicle in vehicles" :key="vehicle.id" :label="vehicle.plate_number" :value="vehicle.id" />
         </el-select>
       </el-form-item>
+      <el-form-item label="费用状态">
+        <el-select v-model="filters.payment_status" clearable placeholder="全部" style="width: 130px">
+          <el-option label="未支付" value="UNPAID" />
+          <el-option label="已支付" value="PAID" />
+          <el-option label="已免除" value="WAIVED" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="导出日期">
         <el-date-picker
           v-model="filters.date_range"
@@ -133,6 +142,9 @@ onMounted(async () => {
       <el-table-column label="流程状态" min-width="145"><template #default="{ row }"><StatusTag :status="row.status" /></template></el-table-column>
       <el-table-column label="称重结果" min-width="100"><template #default="{ row }"><StatusTag :result="row.weight_result" /></template></el-table-column>
       <el-table-column label="净货重" min-width="120"><template #default="{ row }"><WeightValue :value="row.net_weight_tons" /></template></el-table-column>
+      <el-table-column label="费用" min-width="100">
+        <template #default="{ row }">{{ row.billing_record ? `${row.billing_record.fee_amount} 元` : '—' }}</template>
+      </el-table-column>
       <el-table-column label="更新时间" min-width="180"><template #default="{ row }">{{ formatDateTime(row.updated_at) }}</template></el-table-column>
       <el-table-column label="操作" width="90" fixed="right"><template #default="{ row }"><el-button link type="primary" @click.stop="router.push(`/weighing/workbench/${row.id}`)">查看</el-button></template></el-table-column>
       <template #empty><el-empty description="没有符合条件的称重任务" /></template>

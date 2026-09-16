@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.orm import Session
 
-from app.domain.enums import CargoType
+from app.domain.enums import CargoType, VehicleType
 from app.domain.exceptions import ConflictError
 from app.schemas.vehicle import VehicleCreate, VehicleUpdate
 from app.schemas.weighing import WeighingTaskCreate
@@ -23,7 +23,7 @@ def vehicle_data(
         plate_number=plate_number,
         driver_name="张师傅",
         driver_phone="13800000000",
-        vehicle_type="重型货车",
+        vehicle_type=VehicleType.LARGE,
         allowed_gross_weight_tons=Decimal(allowed),
     )
 

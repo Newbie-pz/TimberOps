@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.domain.enums import CargoType, WeighingStatus, WeightResult
+from app.domain.enums import CargoType, VehicleType, WeighingStatus, WeightResult
 from app.schemas.vehicle import VehicleCreate
 from app.schemas.weighing import (
     GrossWeightInput,
@@ -33,6 +33,7 @@ def _completed_task(
     vehicle = VehicleService(session).create_vehicle(
         VehicleCreate(
             plate_number=plate_number,
+            vehicle_type=VehicleType.LARGE,
             allowed_gross_weight_tons=Decimal("49.000"),
         )
     )

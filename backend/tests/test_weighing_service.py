@@ -13,6 +13,7 @@ from app.domain.enums import (
     WeighingStatus,
     WeightResult,
     WeightType,
+    VehicleType,
 )
 from app.domain.exceptions import ValidationError
 from app.models.audit_log import AuditLog
@@ -33,6 +34,7 @@ def create_task(db_session: Session) -> tuple[WeighingService, WeighingTask]:
     vehicle = VehicleService(db_session).create_vehicle(
         VehicleCreate(
             plate_number="蒙H12345",
+            vehicle_type=VehicleType.LARGE,
             allowed_gross_weight_tons=Decimal("49.000"),
         )
     )
@@ -126,6 +128,7 @@ def test_inbound_direction_is_reserved_but_not_supported_in_v1(
     vehicle = VehicleService(db_session).create_vehicle(
         VehicleCreate(
             plate_number="蒙H54321",
+            vehicle_type=VehicleType.LARGE,
             allowed_gross_weight_tons=Decimal("49.000"),
         )
     )
@@ -144,6 +147,7 @@ def test_other_cargo_without_name_is_persisted(db_session: Session) -> None:
     vehicle = VehicleService(db_session).create_vehicle(
         VehicleCreate(
             plate_number="蒙H54322",
+            vehicle_type=VehicleType.LARGE,
             allowed_gross_weight_tons=Decimal("49.000"),
         )
     )

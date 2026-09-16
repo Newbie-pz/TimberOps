@@ -7,6 +7,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.domain.enums import VehicleType
+
 
 PositiveWeight = Annotated[
     Decimal,
@@ -29,7 +31,7 @@ class VehicleCreate(BaseModel):
     plate_number: str = Field(max_length=20)
     driver_name: str | None = Field(default=None, max_length=100)
     driver_phone: str | None = Field(default=None, max_length=32)
-    vehicle_type: str | None = Field(default=None, max_length=50)
+    vehicle_type: VehicleType
     allowed_gross_weight_tons: PositiveWeight
     remark: str | None = None
 
@@ -43,7 +45,7 @@ class VehicleUpdate(BaseModel):
 
     driver_name: str | None = Field(default=None, max_length=100)
     driver_phone: str | None = Field(default=None, max_length=32)
-    vehicle_type: str | None = Field(default=None, max_length=50)
+    vehicle_type: VehicleType | None = None
     allowed_gross_weight_tons: PositiveWeight | None = None
     remark: str | None = None
 
@@ -54,6 +56,8 @@ class VehicleUpdate(BaseModel):
             and self.allowed_gross_weight_tons is None
         ):
             raise ValueError("allowed_gross_weight_tons cannot be null")
+        if "vehicle_type" in self.model_fields_set and self.vehicle_type is None:
+            raise ValueError("vehicle_type cannot be null")
         return self
 
 
@@ -66,7 +70,8 @@ class VehicleRead(BaseModel):
     plate_number: str
     driver_name: str | None
     driver_phone: str | None
-    vehicle_type: str | None
+    vehicle_type: VehicleType | None
+    vehicle_type_legacy: str | None
     allowed_gross_weight_tons: Decimal
     remark: str | None
     created_at: datetime

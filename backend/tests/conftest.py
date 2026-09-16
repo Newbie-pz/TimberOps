@@ -2,6 +2,8 @@
 
 import os
 from collections.abc import Generator
+from datetime import datetime, timezone
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,7 +17,9 @@ os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
 import app.models  # noqa: F401  # Register all mapped tables.
 from app.db.session import get_db
 from app.db.base import Base
+from app.domain.enums import VehicleType
 from app.main import app
+from app.models.billing import BillingRule
 
 
 @pytest.fixture
@@ -34,6 +38,32 @@ def db_engine() -> Generator[Engine, None, None]:
         cursor.close()
 
     Base.metadata.create_all(engine)
+    seed_session = sessionmaker(bind=engine, expire_on_commit=False)
+    with seed_session() as session:
+        effective_time = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        session.add_all(
+            [
+                BillingRule(
+                    vehicle_type=VehicleType.SMALL,
+                    fee_amount=Decimal("10.00"),
+                    currency="CNY",
+                    effective_time=effective_time,
+                ),
+                BillingRule(
+                    vehicle_type=VehicleType.MEDIUM,
+                    fee_amount=Decimal("30.00"),
+                    currency="CNY",
+                    effective_time=effective_time,
+                ),
+                BillingRule(
+                    vehicle_type=VehicleType.LARGE,
+                    fee_amount=Decimal("100.00"),
+                    currency="CNY",
+                    effective_time=effective_time,
+                ),
+            ]
+        )
+        session.commit()
     yield engine
     Base.metadata.drop_all(engine)
     engine.dispose()

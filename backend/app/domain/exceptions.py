@@ -23,3 +23,21 @@ class NotFoundError(DomainError):
 
 class ConflictError(DomainError):
     """A command conflicts with an existing unique business value."""
+
+
+class CodedBusinessError(BusinessRuleError):
+    """A business failure whose stable code is part of the public API contract."""
+
+    code = "BUSINESS_CONFLICT"
+
+
+class VehicleHasHistoryError(CodedBusinessError):
+    """A vehicle with weighing history must remain addressable."""
+
+    code = "VEHICLE_HAS_HISTORY"
+
+
+class CustomerHasHistoryError(CodedBusinessError):
+    """A customer with weighing history must remain addressable."""
+
+    code = "CUSTOMER_HAS_HISTORY"

@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.schemas.customer import CustomerCreate, CustomerRead, CustomerUpdate
+from app.schemas.lifecycle import DeleteEntityInput
 from app.services.customer_service import CustomerService
 
 
@@ -37,3 +38,12 @@ def update_customer(
     session: DbSession,
 ) -> object:
     return CustomerService(session).update_customer(customer_id, data)
+
+
+@router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_customer(
+    customer_id: UUID,
+    data: DeleteEntityInput,
+    session: DbSession,
+) -> None:
+    CustomerService(session).delete_customer(customer_id, data)

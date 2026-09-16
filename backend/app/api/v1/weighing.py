@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.domain.cargo_catalog import get_cargo_catalog
-from app.domain.enums import CargoType, WeighingStatus
+from app.domain.enums import CargoType, PaymentStatus, WeighingStatus
+from app.schemas.lifecycle import DeleteEntityInput
 from app.schemas.weighing import (
     GrossWeightInput,
     ReweighInput,
@@ -49,11 +50,13 @@ def list_tasks(
         Query(alias="status"),
     ] = None,
     vehicle_id: UUID | None = None,
+    payment_status: PaymentStatus | None = None,
 ) -> object:
     return WeighingService(session).list_tasks(
         cargo_type=cargo_type,
         status=status_filter,
         vehicle_id=vehicle_id,
+        payment_status=payment_status,
     )
 
 
@@ -116,3 +119,12 @@ def record_reweigh(
 @router.post("/tasks/{task_id}/complete", response_model=WeighingTaskRead)
 def complete_task(task_id: UUID, session: DbSession) -> object:
     return WeighingService(session).complete_task(task_id)
+
+
+@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(
+    task_id: UUID,
+    data: DeleteEntityInput,
+    session: DbSession,
+) -> None:
+    WeighingService(session).delete_task(task_id, data)

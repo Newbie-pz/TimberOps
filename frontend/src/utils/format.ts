@@ -1,10 +1,16 @@
-import type { CargoType, WeighingStatus, WeightResult, WeightType } from '@/types'
+import type { CargoType, VehicleType, WeighingStatus, WeightResult, WeightType } from '@/types'
 
 export const cargoTypeLabel: Record<CargoType, string> = {
   ORE: '矿石',
   COAL: '煤炭',
   TIMBER: '木材',
   OTHER: '其他',
+}
+
+export const vehicleTypeLabel: Record<VehicleType, string> = {
+  SMALL: '小型货车',
+  MEDIUM: '中型货车',
+  LARGE: '大型货车',
 }
 
 export const statusLabel: Record<WeighingStatus, string> = {

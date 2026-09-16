@@ -10,6 +10,7 @@ import { createWeighingTask, getCargoCatalog } from '@/api/weighing'
 import PageHeader from '@/components/PageHeader.vue'
 import WeightValue from '@/components/WeightValue.vue'
 import { useWeighingStore } from '@/stores/weighing'
+import { vehicleTypeLabel } from '@/utils/format'
 import type { CargoCatalog, CargoType, Customer, Vehicle, WeighingTaskCreate } from '@/types'
 
 const router = useRouter()
@@ -147,7 +148,7 @@ onMounted(loadOptions)
         <dl class="detail-list">
           <div><dt>司机</dt><dd>{{ selectedVehicle.driver_name || '未登记' }}</dd></div>
           <div><dt>联系电话</dt><dd>{{ selectedVehicle.driver_phone || '未登记' }}</dd></div>
-          <div><dt>车辆类型</dt><dd>{{ selectedVehicle.vehicle_type || '未登记' }}</dd></div>
+          <div><dt>车辆类型</dt><dd>{{ selectedVehicle.vehicle_type ? vehicleTypeLabel[selectedVehicle.vehicle_type] : '待标准化' }}</dd></div>
           <div><dt>核定总质量</dt><dd><WeightValue :value="selectedVehicle.allowed_gross_weight_tons" prominent /></dd></div>
         </dl>
         <el-alert title="创建后核定总质量与司机信息将保存为任务快照" type="info" :closable="false" show-icon />

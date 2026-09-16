@@ -34,6 +34,7 @@ from app.domain.enums import (
 )
 
 if TYPE_CHECKING:
+    from app.models.billing import BillingRecord
     from app.models.customer import Customer
     from app.models.vehicle import Vehicle
 
@@ -136,12 +137,19 @@ class WeighingTask(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     gross_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     version: Mapped[int] = mapped_column(Integer, default=1)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    deleted_by: Mapped[UUID | None]
+    delete_reason: Mapped[str | None] = mapped_column(Text)
 
     vehicle: Mapped["Vehicle"] = relationship(back_populates="weighing_tasks")
     customer: Mapped["Customer | None"] = relationship(back_populates="weighing_tasks")
     records: Mapped[list["WeighingRecord"]] = relationship(
         back_populates="weighing_task",
         order_by="WeighingRecord.sequence_no",
+    )
+    billing_record: Mapped["BillingRecord | None"] = relationship(
+        back_populates="weighing_task",
+        uselist=False,
     )
 
 
