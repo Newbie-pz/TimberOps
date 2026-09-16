@@ -3,6 +3,7 @@ import { computed, nextTick, ref } from 'vue'
 import { Delete, Promotion } from '@element-plus/icons-vue'
 
 import { chatWithAI } from '@/api/ai'
+import { ApiError } from '@/api/request'
 import ChatMessageView from '@/components/ai/ChatMessage.vue'
 import SuggestedQuestions from '@/components/ai/SuggestedQuestions.vue'
 import PageHeader from '@/components/PageHeader.vue'
@@ -53,8 +54,11 @@ async function sendMessage(): Promise<void> {
     messages.value.push(
       createMessage('assistant', response.answer, response.tool_calls),
     )
-  } catch {
-    errorMessage.value = '本次查询未完成。AI 服务可能未启用或暂时不可用，请稍后重试。'
+  } catch (error: unknown) {
+    errorMessage.value =
+      error instanceof ApiError
+        ? error.message
+        : 'AI 助手执行失败，请稍后重试。'
     draft.value = question
   } finally {
     loading.value = false

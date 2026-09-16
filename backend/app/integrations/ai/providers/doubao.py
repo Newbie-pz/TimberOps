@@ -26,13 +26,13 @@ class DoubaoProvider(LLMProvider):
             if not value
         ]
         if missing:
-            raise AIServiceUnavailableError(
-                "Doubao is not configured; missing: " + ", ".join(missing)
-            )
+            raise AIServiceUnavailableError
 
         return ChatOpenAI(
             api_key=SecretStr(self._settings.doubao_api_key or ""),
             base_url=self._settings.doubao_base_url,
             model=self._settings.doubao_model or "",
             temperature=self._settings.ai_temperature,
+            timeout=self._settings.llm_timeout_seconds,
+            max_retries=self._settings.llm_max_retries,
         )

@@ -44,8 +44,9 @@ class TimberOpsAgent:
         self._bound_model = model.bind_tools(tools)
         self._graph = self._build_graph(tools)
 
-    def chat(self, message: str) -> AgentResult:
-        final_state = self._graph.invoke(
+    async def achat(self, message: str) -> AgentResult:
+        """Run asynchronously so the API can enforce an overall deadline."""
+        final_state = await self._graph.ainvoke(
             {"messages": [HumanMessage(content=message)]},
             config={"recursion_limit": 10},
         )
@@ -56,8 +57,8 @@ class TimberOpsAgent:
         )
 
     def _build_graph(self, tools: list[BaseTool]) -> Any:
-        def call_model(state: AgentState) -> dict[str, list[BaseMessage]]:
-            response = self._bound_model.invoke(
+        async def call_model(state: AgentState) -> dict[str, list[BaseMessage]]:
+            response = await self._bound_model.ainvoke(
                 [SystemMessage(content=SYSTEM_PROMPT), *state["messages"]]
             )
             return {"messages": [response]}

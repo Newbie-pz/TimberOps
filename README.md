@@ -2,7 +2,7 @@
 
 TimberOps 是面向中小型木材加工企业的智能运营与车辆称重管理平台。系统包含可独立运行的磅房模块，并逐步覆盖客户、订单、木材库存、出入库和审计。
 
-> 当前状态：Phase 2.4 AI Business Assistant Frontend。车辆称重闭环、Vue 3 磅房工作台、只读 LangGraph Agent、MCP 查询服务和 AI 助手页面已完成。
+> 当前状态：Phase 2.5 AI Reliability & Observability。车辆称重闭环、Vue 3 磅房工作台、只读 LangGraph Agent、MCP 查询服务、AI 助手页面及 AI 调用可靠性加固已完成。
 
 ## 业务定位
 
@@ -136,6 +136,14 @@ AnalyticsService / PostgreSQL
 
 AI 助手页面提供推荐业务问题、普通 HTTP 问答、可折叠 Tool Call 调试信息和只读安全提示。浏览器不保存长期会话，也不包含任何豆包 Key、Base URL 或模型配置。
 
+### AI 调用可靠性
+
+- Provider 网络请求默认 25 秒超时，由 SDK 最多重试 1 次。
+- 整次 LangGraph 执行默认 30 秒截止，浏览器 AI 专用超时默认 35 秒；普通业务 API 仍为 15 秒。
+- 上游超时、上游异常、Agent 内部异常分别映射为稳定的 504、502、500 错误，不向客户端暴露 SDK 原文。
+- 每次 AI 请求生成 UUID `X-Request-ID`，日志记录 provider、model、总耗时、成功状态、错误类型、工具名称和问题长度。
+- 日志不记录问题原文、Prompt、工具结果、API Key、数据库连接串或隐藏推理过程。
+
 ## MCP 查询服务
 
 Phase 2.3 将五项 AnalyticsService 查询能力发布为标准 MCP Tools：
@@ -175,7 +183,7 @@ Vue AI 助手只调用 FastAPI Agent API，不连接 MCP Server。MCP 仍是外�
 
 ## 当前边界
 
-Phase 2.4 已完成 Vehicle、Customer、称重 REST API、Vue 磅房工作台、只读业务 Agent、MCP Server 和 AI 助手前端。订单、库存、鉴权、地磅设备、对话持久化、流式响应、MCP 远程认证、RAG 与多 Agent 尚未实现。
+Phase 2.5 已完成 Vehicle、Customer、称重 REST API、Vue 磅房工作台、只读业务 Agent、MCP Server、AI 助手前端及 AI 调用可靠性加固。订单、库存、鉴权、地磅设备、对话持久化、流式响应、MCP 远程认证、RAG 与多 Agent 尚未实现。
 
 ## License
 

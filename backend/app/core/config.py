@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -35,6 +35,22 @@ class Settings(BaseSettings):
         le=2,
         validation_alias="AI_TEMPERATURE",
     )
+    llm_timeout_seconds: float = Field(
+        default=25,
+        gt=0,
+        validation_alias="LLM_TIMEOUT_SECONDS",
+    )
+    llm_max_retries: int = Field(
+        default=1,
+        ge=0,
+        le=1,
+        validation_alias="LLM_MAX_RETRIES",
+    )
+    ai_agent_timeout_seconds: float = Field(
+        default=30,
+        gt=0,
+        validation_alias="AI_AGENT_TIMEOUT_SECONDS",
+    )
     mcp_host: str = Field(default="127.0.0.1", validation_alias="MCP_HOST")
     mcp_port: int = Field(default=8001, ge=1, le=65535, validation_alias="MCP_PORT")
 
@@ -45,6 +61,16 @@ class Settings(BaseSettings):
         case_sensitive=False,
         frozen=True,
     )
+
+    @model_validator(mode="after")
+    def validate_ai_timeout_budget(self) -> "Settings":
+        """Keep the provider deadline inside the Agent's overall deadline."""
+        if self.llm_timeout_seconds >= self.ai_agent_timeout_seconds:
+            raise ValueError(
+                "LLM_TIMEOUT_SECONDS must be less than "
+                "AI_AGENT_TIMEOUT_SECONDS"
+            )
+        return self
 
     def require_database_url(self) -> str:
         """Return the configured database URL or fail with an actionable error."""

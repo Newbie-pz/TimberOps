@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from app.api.exceptions import register_exception_handlers
 from app.api.router import api_router
 from app.core.config import get_settings
+from app.integrations.ai.observability import AIRequestObservabilityMiddleware
 
 
 def create_app() -> FastAPI:
@@ -16,6 +17,7 @@ def create_app() -> FastAPI:
     )
     register_exception_handlers(application)
     application.include_router(api_router)
+    application.add_middleware(AIRequestObservabilityMiddleware)
     return application
 
 

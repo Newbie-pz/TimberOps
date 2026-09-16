@@ -1,6 +1,6 @@
 # TimberOps Backend
 
-TimberOps 后端负责 HTTP API、应用配置、数据库访问、称重领域能力和只读业务智能查询。当前完成 Phase 2.3：除 LangGraph Agent 外，外部 Agent 还可通过标准 MCP Streamable HTTP 协议调用同一组查询能力。
+TimberOps 后端负责 HTTP API、应用配置、数据库访问、称重领域能力和只读业务智能查询。当前完成 Phase 2.5：LangGraph Agent 已具备明确超时、有限重试、安全错误映射与请求级日志；独立 MCP Server 仍通过标准 Streamable HTTP 协议提供同一组查询能力。
 
 ## 技术栈
 
@@ -69,6 +69,9 @@ DOUBAO_API_KEY=
 DOUBAO_BASE_URL=
 DOUBAO_MODEL=
 AI_TEMPERATURE=0
+LLM_TIMEOUT_SECONDS=25
+LLM_MAX_RETRIES=1
+AI_AGENT_TIMEOUT_SECONDS=30
 MCP_HOST=127.0.0.1
 MCP_PORT=8001
 ```
@@ -170,6 +173,19 @@ AI 默认关闭。只有调用 Agent API 时才检查 Provider 配置；缺少�
 4. 重启后端。模型 ID 和 Base URL 均由环境提供，源码不内置具体值。
 
 LangGraph 使用单 Agent 循环：`START → Agent → (ToolNode → Agent)* → END`。首版不保存会话记忆。
+
+### AI 可靠性与可观测性
+
+`DoubaoProvider` 将 `LLM_TIMEOUT_SECONDS` 和 `LLM_MAX_RETRIES` 直接传给当前版本的 `ChatOpenAI`。默认一次调用 25 秒超时，首次失败后最多由 SDK 重试一次；应用层和前端不会追加自动重试。`AI_AGENT_TIMEOUT_SECONDS` 默认 30 秒，通过异步 LangGraph 调用和 `asyncio.timeout` 限制完整的模型/工具循环。配置启动时要求 Provider 超时严格小于 Agent 总超时。
+
+| 场景 | HTTP | 错误码 |
+| --- | ---: | --- |
+| AI 关闭或必要配置缺失 | 503 | `AI_SERVICE_UNAVAILABLE` |
+| Provider 或 Agent 总截止时间超时 | 504 | `AI_UPSTREAM_TIMEOUT` |
+| Provider 网络/API 异常 | 502 | `AI_UPSTREAM_ERROR` |
+| Agent Graph 非上游异常 | 500 | `AI_AGENT_ERROR` |
+
+每次 `POST /api/v1/ai/chat` 生成 UUID，并通过 `X-Request-ID` 响应头返回。标准日志记录 request ID、provider、model、`duration_ms`、成功状态、错误类型、工具名称及 `message_length`；不记录问题原文、完整 Prompt、工具结果、API Key、数据库 URL、上游响应正文或隐藏推理过程。
 
 ## MCP Server
 
@@ -299,6 +315,7 @@ Phase 1.2 仍未把后端服务加入根目录 `docker-compose.yml`。在后续 
 - 可替换 LLM Provider 与豆包 Provider
 - LangGraph Tool Calling Agent 和 `/api/v1/ai/chat`
 - 不调用真实模型的 Stub Agent 测试
+- Provider/Agent 超时、错误映射、Request ID 与安全日志测试
 - MCP Streamable HTTP Server、五个结构化查询工具和协议级测试
 
-未实现：用户、认证、RBAC、Order、Inventory、Material、磅单打印、真实设备、Agent 前端、MCP 远程认证、RAG 和多 Agent。
+未实现：用户、认证、RBAC、Order、Inventory、Material、磅单打印、真实设备、AI 流式响应、对话持久化、MCP 远程认证、RAG 和多 Agent。
