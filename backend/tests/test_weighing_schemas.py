@@ -10,9 +10,10 @@ from app.domain.enums import CargoType
 from app.schemas.weighing import ReweighInput, WeighingTaskCreate
 
 
-def test_other_cargo_requires_name() -> None:
-    with pytest.raises(PydanticValidationError):
-        WeighingTaskCreate(vehicle_id=uuid4(), cargo_type=CargoType.OTHER)
+def test_other_cargo_allows_empty_name() -> None:
+    data = WeighingTaskCreate(vehicle_id=uuid4(), cargo_type=CargoType.OTHER)
+
+    assert data.cargo_name is None
 
 
 def test_other_cargo_accepts_specific_name() -> None:

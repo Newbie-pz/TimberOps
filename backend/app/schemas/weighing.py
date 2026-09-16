@@ -2,10 +2,10 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated, Self
+from typing import Annotated
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.domain.enums import (
     CargoType,
@@ -34,13 +34,6 @@ class WeighingTaskCreate(BaseModel):
     cargo_type: CargoType
     cargo_name: str | None = Field(default=None, max_length=100)
     cargo_remark: str | None = None
-
-    @model_validator(mode="after")
-    def validate_other_cargo_name(self) -> Self:
-        if self.cargo_type is CargoType.OTHER and not self.cargo_name:
-            raise ValueError("cargo_name is required when cargo_type is OTHER")
-        return self
-
 
 class TareWeightInput(BaseModel):
     """Manual first tare reading."""

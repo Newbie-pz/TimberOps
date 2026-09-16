@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.domain.cargo_catalog import get_cargo_catalog
 from app.domain.enums import CargoType, WeighingStatus
 from app.schemas.weighing import (
     GrossWeightInput,
@@ -22,6 +23,12 @@ from app.services.weighing_service import WeighingService
 
 router = APIRouter(prefix="/weighing", tags=["weighing"])
 DbSession = Annotated[Session, Depends(get_db)]
+
+
+@router.get("/cargo-catalog", response_model=dict[str, list[str]])
+def cargo_catalog() -> dict[str, list[str]]:
+    """Expose the domain-owned cargo-name choices to entry clients."""
+    return get_cargo_catalog()
 
 
 @router.post(
@@ -78,11 +85,13 @@ def record_tare(
 
 @router.post("/tasks/{task_id}/loading", response_model=WeighingTaskRead)
 def start_loading(task_id: UUID, session: DbSession) -> object:
+    """Compatibility endpoint; LOADING was removed and now returns WAIT_GROSS."""
     return WeighingService(session).start_loading(task_id)
 
 
 @router.post("/tasks/{task_id}/wait-gross", response_model=WeighingTaskRead)
 def finish_loading(task_id: UUID, session: DbSession) -> object:
+    """Move from completed tare weighing directly to WAIT_GROSS."""
     return WeighingService(session).finish_loading(task_id)
 
 

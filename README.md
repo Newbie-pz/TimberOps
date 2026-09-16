@@ -2,7 +2,7 @@
 
 TimberOps 是面向中小型木材加工企业的智能运营与车辆称重管理平台。系统包含可独立运行的磅房模块，并逐步覆盖客户、订单、木材库存、出入库和审计。
 
-> 当前状态：Phase 2.5 AI Reliability & Observability。车辆称重闭环、Vue 3 磅房工作台、只读 LangGraph Agent、MCP 查询服务、AI 助手页面及 AI 调用可靠性加固已完成。
+> 当前状态：Phase 2.5.1 Weighbridge UX。车辆称重闭环、联动货物目录、简化磅房流程、称重历史 Excel 导出、只读 Agent/MCP 及 AI 调用可靠性加固已完成。
 
 ## 业务定位
 
@@ -29,10 +29,14 @@ overweight_tons = max(gross_weight_tons - allowed_gross_weight_tons, 0)
 
 流程状态与称重结果彻底分离：
 
-- `status`：`WAIT_TARE / TARE_COMPLETED / LOADING / WAIT_GROSS / GROSS_COMPLETED / COMPLETED / CANCELLED`
+- `status`：`WAIT_TARE / TARE_COMPLETED / WAIT_GROSS / GROSS_COMPLETED / COMPLETED / CANCELLED`
 - `weight_result`：`PENDING / NORMAL / OVERWEIGHT`
 
 超重车辆不得完成出厂，必须卸货、返回 `WAIT_GROSS` 并追加一条复磅记录。历史读数不可覆盖；只有最新有效的正常读数才能作为任务最终重量。
+
+货物一级分类保持 `COAL / ORE / TIMBER / OTHER`。煤炭、矿物和木材的具体品种由后端统一目录提供，`cargo_name` 可留空，创建页面只允许从对应分类目录选择。空车称重后无需维护单独的“装货中”状态，确认装货完成即可进入 `WAIT_GROSS`。
+
+称重历史可按日期、车辆、客户和货物类型导出 XLSX，包含磅单编号、车辆/司机/客户、货物信息、三项重量、状态和结果。导出日期按 UTC+08:00 的任务创建日期解释。
 
 ## 技术栈
 
@@ -183,7 +187,7 @@ Vue AI 助手只调用 FastAPI Agent API，不连接 MCP Server。MCP 仍是外�
 
 ## 当前边界
 
-Phase 2.5 已完成 Vehicle、Customer、称重 REST API、Vue 磅房工作台、只读业务 Agent、MCP Server、AI 助手前端及 AI 调用可靠性加固。订单、库存、鉴权、地磅设备、对话持久化、流式响应、MCP 远程认证、RAG 与多 Agent 尚未实现。
+Phase 2.5.1 已完成 Vehicle、Customer、称重 REST API、联动货物目录、简化称重工作台、历史 XLSX 导出、只读业务 Agent、MCP Server、AI 助手前端及 AI 调用可靠性加固。订单、库存、鉴权、地磅设备、对话持久化、流式响应、MCP 远程认证、RAG 与多 Agent 尚未实现。
 
 ## License
 

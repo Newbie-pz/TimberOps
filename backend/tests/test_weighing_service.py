@@ -51,8 +51,7 @@ def advance_to_wait_gross(
         task.id,
         TareWeightInput(weight_tons=Decimal("15.820")),
     )
-    service.start_loading(task.id)
-    service.finish_loading(task.id)
+    service.prepare_for_gross(task.id)
     return service, task
 
 
@@ -109,6 +108,18 @@ def test_invalid_transition_is_rejected(db_session: Session) -> None:
     assert task.status is WeighingStatus.WAIT_TARE
 
 
+def test_tare_moves_directly_to_wait_gross_without_loading(
+    db_session: Session,
+) -> None:
+    service, task = create_task(db_session)
+    service.record_tare(task.id, TareWeightInput(weight_tons=Decimal("15.820")))
+
+    task = service.prepare_for_gross(task.id)
+
+    assert task.status is WeighingStatus.WAIT_GROSS
+    assert "LOADING" not in {status.value for status in WeighingStatus}
+
+
 def test_inbound_direction_is_reserved_but_not_supported_in_v1(
     db_session: Session,
 ) -> None:
@@ -127,6 +138,22 @@ def test_inbound_direction_is_reserved_but_not_supported_in_v1(
                 weighing_direction=WeighingDirection.INBOUND,
             )
         )
+
+
+def test_other_cargo_without_name_is_persisted(db_session: Session) -> None:
+    vehicle = VehicleService(db_session).create_vehicle(
+        VehicleCreate(
+            plate_number="蒙H54322",
+            allowed_gross_weight_tons=Decimal("49.000"),
+        )
+    )
+
+    task = WeighingService(db_session).create_task(
+        WeighingTaskCreate(vehicle_id=vehicle.id, cargo_type=CargoType.OTHER)
+    )
+
+    assert task.cargo_type is CargoType.OTHER
+    assert task.cargo_name is None
 
 
 def test_invalid_gross_is_atomic(db_session: Session) -> None:

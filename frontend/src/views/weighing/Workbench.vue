@@ -11,7 +11,6 @@ import {
   recordGross,
   recordReweigh,
   recordTare,
-  startLoading,
 } from '@/api/weighing'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
@@ -56,10 +55,9 @@ const activeStep = computed(() => {
   switch (task.value?.status) {
     case 'WAIT_TARE': return 0
     case 'TARE_COMPLETED':
-    case 'LOADING': return 1
-    case 'WAIT_GROSS': return 2
-    case 'GROSS_COMPLETED': return 3
-    case 'COMPLETED': return 4
+    case 'WAIT_GROSS': return 1
+    case 'GROSS_COMPLETED': return 2
+    case 'COMPLETED': return 3
     default: return 0
   }
 })
@@ -158,7 +156,6 @@ onMounted(loadTask)
       <el-card shadow="never" class="panel-card steps-card">
         <el-steps :active="activeStep" finish-status="success" align-center>
           <el-step title="空车称重" />
-          <el-step title="装载货物" />
           <el-step title="重车称重" />
           <el-step title="结果确认" />
           <el-step title="完成出场" />
@@ -207,19 +204,12 @@ onMounted(loadTask)
           <div v-else-if="task.status === 'TARE_COMPLETED'" class="operation-content centered">
             <div class="operation-symbol"><el-icon><Check /></el-icon></div>
             <h3>空车称重完成</h3>
-            <p>已记录 <WeightValue :value="task.tare_weight_tons" />，确认车辆开始装载货物。</p>
-            <el-button type="primary" size="large" :loading="acting" @click="runAction(() => startLoading(taskId), '已开始装货')">开始装货</el-button>
-          </div>
-
-          <div v-else-if="task.status === 'LOADING'" class="operation-content centered">
-            <div class="operation-symbol loading-symbol">装</div>
-            <h3>车辆装货中</h3>
-            <p>装载完成并确认车辆可以进行第二次称重。</p>
+            <p>已记录 <WeightValue :value="task.tare_weight_tons" />，装货完成后进入第二次称重。</p>
             <el-button type="primary" size="large" :loading="acting" @click="runAction(() => finishLoading(taskId), '已进入重车待称状态')">装货完成，等待重车称重</el-button>
           </div>
 
           <div v-else-if="task.status === 'WAIT_GROSS' && !isOverweight" class="operation-content">
-            <p class="operation-index">步骤 03</p>
+            <p class="operation-index">步骤 02</p>
             <h3>记录重车重量</h3>
             <p>系统将在服务端计算净货重和超重结果。</p>
             <label>重车重量（t）</label>

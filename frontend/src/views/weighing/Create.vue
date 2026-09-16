@@ -1,22 +1,23 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { ArrowRight, Refresh } from '@element-plus/icons-vue'
 
 import { listCustomers } from '@/api/customer'
 import { listVehicles } from '@/api/vehicle'
-import { createWeighingTask } from '@/api/weighing'
+import { createWeighingTask, getCargoCatalog } from '@/api/weighing'
 import PageHeader from '@/components/PageHeader.vue'
 import WeightValue from '@/components/WeightValue.vue'
 import { useWeighingStore } from '@/stores/weighing'
-import type { CargoType, Customer, Vehicle, WeighingTaskCreate } from '@/types'
+import type { CargoCatalog, CargoType, Customer, Vehicle, WeighingTaskCreate } from '@/types'
 
 const router = useRouter()
 const store = useWeighingStore()
 const formRef = ref<FormInstance>()
 const vehicles = ref<Vehicle[]>([])
 const customers = ref<Customer[]>([])
+const cargoCatalog = ref<CargoCatalog>({ COAL: [], ORE: [], TIMBER: [], OTHER: [] })
 const loadingOptions = ref(false)
 const submitting = ref(false)
 const form = reactive({
@@ -30,19 +31,12 @@ const form = reactive({
 const selectedVehicle = computed(() =>
   vehicles.value.find((vehicle) => vehicle.id === form.vehicle_id),
 )
+const cargoNameOptions = computed(() =>
+  form.cargo_type ? cargoCatalog.value[form.cargo_type] : [],
+)
 const rules: FormRules = {
   vehicle_id: [{ required: true, message: '请选择车辆', trigger: 'change' }],
   cargo_type: [{ required: true, message: '请选择货物类型', trigger: 'change' }],
-  cargo_name: [
-    {
-      validator: (_rule, value: string, callback) => {
-        if (form.cargo_type === 'OTHER' && !value.trim()) {
-          callback(new Error('其他货物必须填写货物名称'))
-        } else callback()
-      },
-      trigger: 'blur',
-    },
-  ],
 }
 const cargoOptions: Array<{ value: CargoType; label: string }> = [
   { value: 'ORE', label: '矿石' },
@@ -54,13 +48,25 @@ const cargoOptions: Array<{ value: CargoType; label: string }> = [
 async function loadOptions(): Promise<void> {
   loadingOptions.value = true
   try {
-    const [vehicleItems, customerItems] = await Promise.all([listVehicles(), listCustomers()])
+    const [vehicleItems, customerItems, catalog] = await Promise.all([
+      listVehicles(),
+      listCustomers(),
+      getCargoCatalog(),
+    ])
     vehicles.value = vehicleItems
     customers.value = customerItems
+    cargoCatalog.value = catalog
   } finally {
     loadingOptions.value = false
   }
 }
+
+watch(
+  () => form.cargo_type,
+  () => {
+    form.cargo_name = ''
+  },
+)
 
 async function submit(): Promise<void> {
   if (!(await formRef.value?.validate())) return
@@ -115,7 +121,16 @@ onMounted(loadOptions)
             </el-select>
           </el-form-item>
           <el-form-item label="货物名称" prop="cargo_name">
-            <el-input v-model="form.cargo_name" :placeholder="form.cargo_type === 'OTHER' ? '必填，例如：石料' : '例如：铁矿石（可选）'" />
+            <el-select
+              v-model="form.cargo_name"
+              clearable
+              filterable
+              :disabled="!form.cargo_type || !cargoNameOptions.length"
+              placeholder="可不选具体品种"
+              style="width: 100%"
+            >
+              <el-option v-for="name in cargoNameOptions" :key="name" :label="name" :value="name" />
+            </el-select>
           </el-form-item>
         </div>
         <el-form-item label="货物备注"><el-input v-model="form.cargo_remark" type="textarea" :rows="3" /></el-form-item>

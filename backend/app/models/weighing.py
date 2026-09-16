@@ -68,11 +68,6 @@ class WeighingTask(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             "OR gross_weight_tons > tare_weight_tons",
             name="ck_weighing_tasks_gross_above_tare",
         ),
-        CheckConstraint(
-            "cargo_type != 'OTHER' OR "
-            "(cargo_name IS NOT NULL AND length(trim(cargo_name)) > 0)",
-            name="ck_weighing_tasks_other_has_cargo_name",
-        ),
     )
 
     task_no: Mapped[str] = mapped_column(String(40), unique=True, index=True)

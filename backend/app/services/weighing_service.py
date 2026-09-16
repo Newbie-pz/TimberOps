@@ -44,7 +44,6 @@ class WeighingService:
         {
             WeighingStatus.WAIT_TARE,
             WeighingStatus.TARE_COMPLETED,
-            WeighingStatus.LOADING,
             WeighingStatus.WAIT_GROSS,
             WeighingStatus.GROSS_COMPLETED,
         }
@@ -63,11 +62,6 @@ class WeighingService:
                 raise NotFoundError(f"customer not found: {data.customer_id}")
         if data.weighing_direction is not WeighingDirection.OUTBOUND:
             raise BusinessRuleError("V1 only supports OUTBOUND weighing")
-        if data.cargo_type is CargoType.OTHER and not data.cargo_name:
-            raise BusinessRuleError(
-                "cargo_name is required when cargo_type is OTHER"
-            )
-
         task = WeighingTask(
             task_no=self._new_task_no(),
             vehicle_id=vehicle.id,
@@ -154,19 +148,22 @@ class WeighingService:
         return task
 
     def start_loading(self, task_id: UUID) -> WeighingTask:
-        task = self._get_task_for_update(task_id)
-        self._require_status(task, WeighingStatus.TARE_COMPLETED)
-        task.status = WeighingStatus.LOADING
-        task.version += 1
-        self._commit("could not start loading")
-        return task
+        """Compatibility alias: the removed LOADING state now means WAIT_GROSS."""
+        return self.prepare_for_gross(task_id)
 
     def finish_loading(self, task_id: UUID) -> WeighingTask:
+        """Compatibility alias retained for existing `/wait-gross` clients."""
+        return self.prepare_for_gross(task_id)
+
+    def prepare_for_gross(self, task_id: UUID) -> WeighingTask:
+        """Move directly from completed tare weighing to gross weighing."""
         task = self._get_task_for_update(task_id)
-        self._require_status(task, WeighingStatus.LOADING)
+        if task.status is WeighingStatus.WAIT_GROSS:
+            return task
+        self._require_status(task, WeighingStatus.TARE_COMPLETED)
         task.status = WeighingStatus.WAIT_GROSS
         task.version += 1
-        self._commit("could not finish loading")
+        self._commit("could not prepare gross weighing")
         return task
 
     def record_gross(

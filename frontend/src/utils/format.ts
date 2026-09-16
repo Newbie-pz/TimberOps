@@ -10,7 +10,6 @@ export const cargoTypeLabel: Record<CargoType, string> = {
 export const statusLabel: Record<WeighingStatus, string> = {
   WAIT_TARE: '等待空车称重',
   TARE_COMPLETED: '空车称重完成',
-  LOADING: '装货中',
   WAIT_GROSS: '等待重车称重',
   GROSS_COMPLETED: '重车称重完成',
   COMPLETED: '已完成',

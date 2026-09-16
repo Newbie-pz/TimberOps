@@ -44,9 +44,6 @@ def advance_to_wait_gross(client: TestClient, task_id: str) -> None:
     assert tare.status_code == 200
     assert tare.json()["status"] == "TARE_COMPLETED"
     assert client.post(
-        f"/api/v1/weighing/tasks/{task_id}/loading"
-    ).json()["status"] == "LOADING"
-    assert client.post(
         f"/api/v1/weighing/tasks/{task_id}/wait-gross"
     ).json()["status"] == "WAIT_GROSS"
 
@@ -128,6 +125,49 @@ def test_create_and_filter_weighing_tasks(api_client: TestClient) -> None:
     )
     assert response.status_code == 200
     assert [item["id"] for item in response.json()] == [task["id"]]
+
+
+def test_history_response_contains_cargo_name_and_remark(
+    api_client: TestClient,
+) -> None:
+    vehicle = create_vehicle(api_client)
+    created = api_client.post(
+        "/api/v1/weighing/tasks",
+        json={
+            "vehicle_id": vehicle["id"],
+            "cargo_type": "TIMBER",
+            "cargo_name": "落叶松原木",
+            "cargo_remark": "俄罗斯进口",
+        },
+    )
+    assert created.status_code == 201
+
+    history = api_client.get("/api/v1/weighing/tasks")
+
+    assert history.status_code == 200
+    assert history.json()[0]["cargo_name"] == "落叶松原木"
+    assert history.json()[0]["cargo_remark"] == "俄罗斯进口"
+
+
+def test_legacy_loading_endpoint_moves_directly_to_wait_gross(
+    api_client: TestClient,
+) -> None:
+    vehicle = create_vehicle(api_client)
+    task = create_task(api_client, vehicle["id"])
+    api_client.post(
+        f"/api/v1/weighing/tasks/{task['id']}/tare",
+        json={"weight_tons": "15.820"},
+    )
+
+    loading = api_client.post(f"/api/v1/weighing/tasks/{task['id']}/loading")
+    repeated = api_client.post(
+        f"/api/v1/weighing/tasks/{task['id']}/wait-gross"
+    )
+
+    assert loading.status_code == 200
+    assert loading.json()["status"] == "WAIT_GROSS"
+    assert repeated.status_code == 200
+    assert repeated.json()["status"] == "WAIT_GROSS"
 
 
 def test_gross_before_tare_returns_invalid_state(api_client: TestClient) -> None:

@@ -41,8 +41,7 @@ def _completed_task(
         WeighingTaskCreate(vehicle_id=vehicle.id, cargo_type=cargo_type)
     )
     service.record_tare(task.id, TareWeightInput(weight_tons=Decimal("15.820")))
-    service.start_loading(task.id)
-    service.finish_loading(task.id)
+    service.prepare_for_gross(task.id)
     service.record_gross(
         task.id,
         GrossWeightInput(weight_tons=Decimal(first_gross or final_gross)),

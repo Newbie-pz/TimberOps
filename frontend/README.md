@@ -1,6 +1,6 @@
 # TimberOps Frontend
 
-TimberOps 磅房操作端，当前完成阶段为 **Phase 2.5 — AI Reliability & Observability**。前端消费既有 FastAPI REST API，不承载称重规则、Agent 逻辑或数据库查询。
+TimberOps 磅房操作端，当前完成阶段为 **Phase 2.5.1 — Weighbridge UX**。前端消费既有 FastAPI REST API，不承载称重规则、Agent 逻辑或数据库查询。
 
 ## 技术栈
 
@@ -56,12 +56,14 @@ cp .env.example .env
 | `/` | Dashboard | 展示当日经营指标；后端暂无统计接口，当前明确使用 mock service |
 | `/vehicles` | 车辆管理 | 查询、新增、编辑车辆档案 |
 | `/customers` | 客户管理 | 查询、新增、编辑客户档案 |
-| `/weighing/create` | 创建称重任务 | 选择车辆、客户和货物并创建出库称重任务 |
-| `/weighing/workbench/:id` | 称重工作台 | 按后端状态推进空车、装货、重车、复磅和完成流程 |
-| `/weighing/history` | 称重历史 | 筛选任务并查看称重记录详情 |
+| `/weighing/create` | 创建称重任务 | 选择车辆、客户、货物分类及后端目录中的具体品种 |
+| `/weighing/workbench/:id` | 称重工作台 | 按简化状态推进空车、重车、复磅和完成流程 |
+| `/weighing/history` | 称重历史 | 查看名称/备注，按日期、车辆、货物类型导出 Excel |
 | `/ai` | 智能助手 | 通过现有 LangGraph Agent 查询真实称重业务数据 |
 
 后端以 `weight_result=OVERWEIGHT` 表示超重。此时任务保持后端返回的 `WAIT_GROSS` 状态，工作台展示红色超重警示和复磅入口；前端没有新增 `OVERWEIGHT` 或 `REWEIGH` 状态。
+
+创建任务时，`cargo_type` 切换会清空旧的 `cargo_name`，并从后端统一目录加载对应下拉选项。具体品种始终可留空，页面不提供自由文本输入。称重流程不再显示 `LOADING`：皮重完成后确认装货完成，即进入 `WAIT_GROSS`。
 
 ## AI 智能助手
 

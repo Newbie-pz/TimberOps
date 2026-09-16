@@ -5,7 +5,6 @@ export type WeighingDirection = 'OUTBOUND' | 'INBOUND'
 export type WeighingStatus =
   | 'WAIT_TARE'
   | 'TARE_COMPLETED'
-  | 'LOADING'
   | 'WAIT_GROSS'
   | 'GROSS_COMPLETED'
   | 'COMPLETED'
@@ -113,6 +112,21 @@ export interface WeighingTaskFilters {
   cargo_type?: CargoType
   status?: WeighingStatus
   vehicle_id?: string
+}
+
+export type CargoCatalog = Record<CargoType, string[]>
+
+export interface WeighingExportFilters {
+  start_date?: string
+  end_date?: string
+  vehicle_id?: string
+  customer_id?: string
+  cargo_type?: CargoType
+}
+
+export interface WeighingExportFile {
+  blob: Blob
+  filename: string
 }
 
 export interface WeightInput {
