@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +15,15 @@ class Settings(BaseSettings):
         validation_alias="APP_NAME",
     )
     debug: bool = Field(default=False, validation_alias="DEBUG")
+    jwt_secret_key: SecretStr | None = Field(
+        default=None,
+        validation_alias="JWT_SECRET_KEY",
+    )
+    jwt_access_token_expire_minutes: int = Field(
+        default=60,
+        gt=0,
+        validation_alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
+    )
     ai_enabled: bool = Field(default=False, validation_alias="AI_ENABLED")
     llm_provider: str = Field(default="doubao", validation_alias="LLM_PROVIDER")
     doubao_api_key: str | None = Field(
@@ -80,6 +89,17 @@ class Settings(BaseSettings):
                 "Copy .env.example to .env and configure it first."
             )
         return self.database_url
+
+    def require_jwt_secret_key(self) -> str:
+        """Return a non-placeholder JWT key suitable for signing tokens."""
+        if self.jwt_secret_key is None:
+            raise RuntimeError("JWT_SECRET_KEY is required for authentication")
+        secret = self.jwt_secret_key.get_secret_value()
+        if secret == "replace_with_random_secret" or len(secret) < 32:
+            raise RuntimeError(
+                "JWT_SECRET_KEY must be replaced with at least 32 random characters"
+            )
+        return secret
 
 
 @lru_cache

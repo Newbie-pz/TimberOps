@@ -3,6 +3,7 @@
 from app.models.audit_log import AuditLog
 from app.models.billing import BillingRecord, BillingRule
 from app.models.customer import Customer
+from app.models.user import User
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingRecord, WeighingTask
 
@@ -11,6 +12,7 @@ __all__ = [
     "BillingRecord",
     "BillingRule",
     "Customer",
+    "User",
     "Vehicle",
     "WeighingRecord",
     "WeighingTask",

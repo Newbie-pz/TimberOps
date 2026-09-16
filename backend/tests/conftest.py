@@ -13,6 +13,10 @@ from sqlalchemy.pool import StaticPool
 
 # Keep test collection independent from a developer's ignored .env file.
 os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
+os.environ.setdefault(
+    "JWT_SECRET_KEY",
+    "test-only-jwt-secret-key-32-characters-minimum",
+)
 
 import app.models  # noqa: F401  # Register all mapped tables.
 from app.db.session import get_db

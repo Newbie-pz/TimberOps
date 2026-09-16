@@ -25,6 +25,10 @@ class ConflictError(DomainError):
     """A command conflicts with an existing unique business value."""
 
 
+class AuthenticationError(DomainError):
+    """Credentials or bearer-token authentication failed."""
+
+
 class CodedBusinessError(BusinessRuleError):
     """A business failure whose stable code is part of the public API contract."""
 

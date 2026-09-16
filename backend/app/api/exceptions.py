@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.domain.exceptions import (
+    AuthenticationError,
     BusinessRuleError,
     CodedBusinessError,
     ConflictError,
@@ -56,6 +57,21 @@ async def resource_not_found_handler(
         status_code=status.HTTP_404_NOT_FOUND,
         code="RESOURCE_NOT_FOUND",
         message=str(exc),
+    )
+
+
+async def authentication_error_handler(
+    request: Request,
+    exc: AuthenticationError,
+) -> JSONResponse:
+    del request
+    payload: ErrorEnvelope = {
+        "error": {"code": "AUTHENTICATION_FAILED", "message": str(exc)}
+    }
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content=payload,
+        headers={"WWW-Authenticate": "Bearer"},
     )
 
 
@@ -147,6 +163,7 @@ async def ai_agent_error_handler(
 def register_exception_handlers(application: FastAPI) -> None:
     """Register handlers once when constructing the application."""
     application.add_exception_handler(NotFoundError, resource_not_found_handler)
+    application.add_exception_handler(AuthenticationError, authentication_error_handler)
     application.add_exception_handler(InvalidStateError, invalid_state_handler)
     application.add_exception_handler(CodedBusinessError, coded_business_error_handler)
     application.add_exception_handler(ConflictError, business_conflict_handler)

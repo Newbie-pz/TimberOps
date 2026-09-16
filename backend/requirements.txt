@@ -12,3 +12,5 @@ langchain-core>=1.6.3,<2.0
 langchain-openai>=1.6.2,<2.0
 mcp>=2.2.0,<3.0
 openpyxl>=3.1,<4.0
+bcrypt>=5.0,<6.0
+PyJWT>=2.14,<3.0
