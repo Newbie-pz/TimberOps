@@ -13,6 +13,7 @@ from app.domain.exceptions import (
     InvalidStateError,
     NotFoundError,
     PermissionDeniedError,
+    RegistrationDisabledError,
     ValidationError,
 )
 from app.integrations.ai.exceptions import (
@@ -84,6 +85,18 @@ async def permission_denied_handler(
     return _error_response(
         status_code=status.HTTP_403_FORBIDDEN,
         code="PERMISSION_DENIED",
+        message=str(exc),
+    )
+
+
+async def registration_disabled_handler(
+    request: Request,
+    exc: RegistrationDisabledError,
+) -> JSONResponse:
+    del request
+    return _error_response(
+        status_code=status.HTTP_403_FORBIDDEN,
+        code="REGISTRATION_DISABLED",
         message=str(exc),
     )
 
@@ -178,6 +191,10 @@ def register_exception_handlers(application: FastAPI) -> None:
     application.add_exception_handler(NotFoundError, resource_not_found_handler)
     application.add_exception_handler(AuthenticationError, authentication_error_handler)
     application.add_exception_handler(PermissionDeniedError, permission_denied_handler)
+    application.add_exception_handler(
+        RegistrationDisabledError,
+        registration_disabled_handler,
+    )
     application.add_exception_handler(InvalidStateError, invalid_state_handler)
     application.add_exception_handler(CodedBusinessError, coded_business_error_handler)
     application.add_exception_handler(ConflictError, business_conflict_handler)

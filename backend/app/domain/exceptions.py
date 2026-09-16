@@ -33,6 +33,10 @@ class PermissionDeniedError(DomainError):
     """An authenticated identity lacks a required permission."""
 
 
+class RegistrationDisabledError(DomainError):
+    """Public self-registration is disabled by explicit configuration."""
+
+
 class CodedBusinessError(BusinessRuleError):
     """A business failure whose stable code is part of the public API contract."""
 

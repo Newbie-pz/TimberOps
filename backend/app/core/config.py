@@ -24,6 +24,10 @@ class Settings(BaseSettings):
         gt=0,
         validation_alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
     )
+    public_registration_enabled: bool = Field(
+        default=True,
+        validation_alias="PUBLIC_REGISTRATION_ENABLED",
+    )
     ai_enabled: bool = Field(default=False, validation_alias="AI_ENABLED")
     llm_provider: str = Field(default="doubao", validation_alias="LLM_PROVIDER")
     doubao_api_key: str | None = Field(

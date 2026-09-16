@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user
 from app.core.config import Settings, get_settings
 from app.db.session import get_db
+from app.domain.exceptions import RegistrationDisabledError
 from app.models.user import User
 from app.schemas.auth import LoginResponse, UserLogin, UserRead, UserRegister
 from app.schemas.rbac import PermissionRead, RoleRead
@@ -27,7 +28,13 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
 )
-def register(data: UserRegister, session: DbSession) -> object:
+def register(
+    data: UserRegister,
+    session: DbSession,
+    settings: SettingsDependency,
+) -> object:
+    if not settings.public_registration_enabled:
+        raise RegistrationDisabledError("Public registration is disabled")
     return UserService(session).register(data)
 
 

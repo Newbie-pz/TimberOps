@@ -2,11 +2,11 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.domain.exceptions import ConflictError, NotFoundError
+from app.domain.exceptions import BusinessRuleError, ConflictError, NotFoundError
 from app.models.rbac import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 
@@ -60,11 +60,20 @@ class RBACService:
         )
         return permission_id is not None
 
-    def assign_role(self, user_id: UUID, role_id: UUID) -> UserRole:
+    def assign_role(
+        self,
+        user_id: UUID,
+        role_id: UUID,
+        *,
+        commit: bool = True,
+    ) -> UserRole:
         self._require_user(user_id)
         self._require_role(role_id)
         assignment = UserRole(user_id=user_id, role_id=role_id)
         self._session.add(assignment)
+        if not commit:
+            self._session.flush()
+            return assignment
         try:
             self._session.commit()
         except IntegrityError as exc:
@@ -82,6 +91,21 @@ class RBACService:
         )
         if assignment is None:
             raise NotFoundError("user role assignment not found")
+        role = self._session.scalar(
+            select(Role).where(Role.id == role_id).with_for_update()
+        )
+        if role is None:
+            raise NotFoundError(f"role not found: {role_id}")
+        if role.name == "ADMIN":
+            admin_count = self._session.scalar(
+                select(func.count(UserRole.id)).where(
+                    UserRole.role_id == role_id
+                )
+            )
+            if int(admin_count or 0) <= 1:
+                raise BusinessRuleError(
+                    "the last ADMIN role assignment cannot be removed"
+                )
         self._session.delete(assignment)
         self._session.commit()
 
