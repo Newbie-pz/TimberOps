@@ -9,6 +9,7 @@ This document describes the Phase 2.7.2 security baseline. It does not replace h
 - Replace the example PostgreSQL password and URL-encode special characters when embedding it in a SQLAlchemy URL.
 - Set a Doubao key only when `AI_ENABLED=true`. The key is injected into the backend process and is never exposed to the Vue build.
 - Run `python scripts/security_check.py` before deployment. Its output identifies the category and location of a finding without printing the matched secret.
+- HTTP request logs contain metadata only. They exclude headers, tokens, bodies, query strings, credentials, prompts, and AI responses.
 
 ## JWT policy
 

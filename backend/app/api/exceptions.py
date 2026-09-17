@@ -202,11 +202,15 @@ async def unexpected_error_handler(
         request.url.path,
         type(exc).__name__,
     )
-    return _error_response(
+    response = _error_response(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         code="INTERNAL_SERVER_ERROR",
         message="系统异常，请稍后重试",
     )
+    request_id = getattr(request.state, "request_id", None)
+    if request_id:
+        response.headers["X-Request-ID"] = str(request_id)
+    return response
 
 
 def register_exception_handlers(application: FastAPI) -> None:

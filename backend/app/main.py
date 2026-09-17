@@ -7,11 +7,16 @@ from app.api.exceptions import register_exception_handlers
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.integrations.ai.observability import AIRequestObservabilityMiddleware
+from app.middleware.request_logging import (
+    RequestLoggingMiddleware,
+    configure_request_logger,
+)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Create and configure the FastAPI application."""
     active_settings = settings or get_settings()
+    configure_request_logger()
     docs_enabled = active_settings.enable_api_docs
     application = FastAPI(
         title=active_settings.app_name,
@@ -31,7 +36,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             allow_credentials=False,
             allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             allow_headers=["Authorization", "Content-Type"],
+            expose_headers=["X-Request-ID"],
         )
+    application.add_middleware(
+        RequestLoggingMiddleware,
+        settings=active_settings,
+    )
     return application
 
 

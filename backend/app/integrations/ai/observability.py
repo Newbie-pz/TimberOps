@@ -5,6 +5,7 @@ from time import perf_counter
 from typing import Any
 from uuid import uuid4
 
+from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.config import get_settings
@@ -24,8 +25,10 @@ class AIRequestObservabilityMiddleware:
             await self.app(scope, receive, send)
             return
 
-        request_id = str(uuid4())
         state: dict[str, Any] = scope.setdefault("state", {})
+        owns_request_id = not state.get("request_id")
+        request_id = str(state.get("request_id") or uuid4())
+        state["request_id"] = request_id
         state["ai_request_id"] = request_id
         settings = get_settings()
         provider = settings.llm_provider
@@ -44,9 +47,8 @@ class AIRequestObservabilityMiddleware:
             nonlocal response_status
             if message["type"] == "http.response.start":
                 response_status = message["status"]
-                headers = list(message.get("headers", []))
-                headers.append((b"x-request-id", request_id.encode("ascii")))
-                message["headers"] = headers
+                if owns_request_id:
+                    MutableHeaders(scope=message)["X-Request-ID"] = request_id
             await send(message)
 
         try:

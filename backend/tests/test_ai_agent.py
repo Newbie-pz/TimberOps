@@ -295,6 +295,27 @@ def test_request_ids_are_unique(api_client: TestClient) -> None:
     assert first_id != second_id
 
 
+def test_ai_observability_reuses_unified_request_id(
+    api_client: TestClient,
+) -> None:
+    request_id = "edge:ai-request-001"
+    app.dependency_overrides[get_ai_agent] = lambda: StubAgent()
+    app.dependency_overrides[get_settings] = lambda: _enabled_settings()
+    try:
+        response = api_client.post(
+            "/api/v1/ai/chat",
+            json={"message": "private business question"},
+            headers={"X-Request-ID": request_id},
+        )
+    finally:
+        app.dependency_overrides.pop(get_ai_agent, None)
+        app.dependency_overrides.pop(get_settings, None)
+
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"] == request_id
+    assert response.headers.get_list("X-Request-ID") == [request_id]
+
+
 def test_success_log_contains_duration_and_tool_names(
     api_client: TestClient,
     caplog: pytest.LogCaptureFixture,

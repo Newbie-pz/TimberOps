@@ -38,6 +38,11 @@ class Settings(BaseSettings):
         gt=0,
         validation_alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES",
     )
+    slow_request_threshold_ms: int = Field(
+        default=1000,
+        ge=0,
+        validation_alias="SLOW_REQUEST_THRESHOLD_MS",
+    )
     public_registration_enabled: bool = Field(
         default=False,
         validation_alias="PUBLIC_REGISTRATION_ENABLED",
