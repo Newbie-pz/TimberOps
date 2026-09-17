@@ -2,6 +2,7 @@
 
 from app.schemas.ai import AIChatRequest, AIChatResponse, AIToolCallRead
 from app.schemas.customer import CustomerCreate, CustomerRead, CustomerUpdate
+from app.schemas.dashboard import DashboardOverview
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.schemas.weighing import (
     CancelWeighingTaskInput,
@@ -22,6 +23,7 @@ __all__ = [
     "CustomerCreate",
     "CustomerRead",
     "CustomerUpdate",
+    "DashboardOverview",
     "GrossWeightInput",
     "ReweighInput",
     "TaskDetailResponse",

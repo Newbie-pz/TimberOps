@@ -4,7 +4,7 @@ from typing import Literal, TypedDict
 
 from fastapi import APIRouter
 
-from app.api.v1 import ai, auth, customers, export, users, vehicles, weighing
+from app.api.v1 import ai, auth, customers, dashboard, export, users, vehicles, weighing
 
 
 class HealthResponse(TypedDict):
@@ -21,6 +21,7 @@ v1_router.include_router(users.router)
 v1_router.include_router(vehicles.router)
 v1_router.include_router(customers.router)
 v1_router.include_router(weighing.router)
+v1_router.include_router(dashboard.router)
 v1_router.include_router(export.router)
 v1_router.include_router(ai.router)
 api_router.include_router(v1_router)

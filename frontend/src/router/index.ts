@@ -33,7 +33,7 @@ const router = createRouter({
           path: '',
           name: 'dashboard',
           component: () => import('@/views/dashboard/Dashboard.vue'),
-          meta: { title: '运营概览' },
+          meta: { title: '运营概览', permission: 'dashboard:view' },
         },
         {
           path: 'vehicles',

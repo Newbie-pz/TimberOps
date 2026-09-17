@@ -60,7 +60,7 @@ async function logout(): Promise<void> {
         active-text-color="#ffffff"
         @select="navigate"
       >
-        <el-menu-item index="/">
+        <el-menu-item v-if="authStore.hasPermission('dashboard:view')" index="/">
           <el-icon><DataAnalysis /></el-icon>
           <template #title>首页</template>
         </el-menu-item>

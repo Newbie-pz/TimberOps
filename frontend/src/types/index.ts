@@ -34,6 +34,7 @@ export type PermissionCode =
   | 'export:data'
   | 'ai:query'
   | 'user:manage'
+  | 'dashboard:view'
 
 export interface Vehicle {
   id: string
