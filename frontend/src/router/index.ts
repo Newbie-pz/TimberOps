@@ -66,6 +66,12 @@ const router = createRouter({
           meta: { title: '称重历史', permission: 'weighing:view' },
         },
         {
+          path: 'billing',
+          name: 'billing',
+          component: () => import('@/views/billing/BillingList.vue'),
+          meta: { title: '费用管理', permission: 'billing:view' },
+        },
+        {
           path: 'ai',
           name: 'ai-assistant',
           component: () => import('@/views/ai/Assistant.vue'),

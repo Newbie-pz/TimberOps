@@ -7,6 +7,7 @@ import {
   Fold,
   Goods,
   List,
+  Money,
   OfficeBuilding,
   Operation,
   SetUp,
@@ -79,6 +80,10 @@ async function logout(): Promise<void> {
         <el-menu-item v-if="authStore.hasPermission('weighing:view')" index="/weighing/history">
           <el-icon><List /></el-icon>
           <template #title>称重历史</template>
+        </el-menu-item>
+        <el-menu-item v-if="authStore.hasPermission('billing:view')" index="/billing">
+          <el-icon><Money /></el-icon>
+          <template #title>费用管理</template>
         </el-menu-item>
         <el-menu-item v-if="authStore.hasPermission('ai:query')" index="/ai">
           <el-icon><ChatDotRound /></el-icon>

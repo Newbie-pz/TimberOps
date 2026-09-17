@@ -21,3 +21,13 @@ class BillingRecordRead(BaseModel):
     fee_amount: Decimal
     payment_status: PaymentStatus
     created_at: datetime
+
+
+class BillingRecordListItem(BillingRecordRead):
+    """Billing record enriched with immutable operational display context."""
+
+    task_no: str
+    plate_number: str
+    customer_id: UUID | None
+    customer_name: str | None
+    completed_at: datetime | None

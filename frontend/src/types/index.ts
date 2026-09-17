@@ -31,6 +31,7 @@ export type PermissionCode =
   | 'weighing:view'
   | 'billing:view'
   | 'billing:update'
+  | 'billing:waive'
   | 'export:data'
   | 'ai:query'
   | 'user:manage'
@@ -78,6 +79,22 @@ export interface BillingRecord {
   fee_amount: string
   payment_status: PaymentStatus
   created_at: string
+}
+
+export interface BillingListItem extends BillingRecord {
+  task_no: string
+  plate_number: string
+  customer_id: string | null
+  customer_name: string | null
+  completed_at: string | null
+}
+
+export interface BillingRecordFilters {
+  start_date?: string
+  end_date?: string
+  vehicle_id?: string
+  customer_id?: string
+  payment_status?: PaymentStatus
 }
 
 export interface CustomerCreate {
