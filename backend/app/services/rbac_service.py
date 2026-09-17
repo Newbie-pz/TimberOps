@@ -28,6 +28,10 @@ class RBACService:
             )
         )
 
+    def list_roles(self) -> list[Role]:
+        """Return the stable role catalog for administrator assignment UI."""
+        return list(self._session.scalars(select(Role).order_by(Role.name)))
+
     def list_user_permissions(self, user_id: UUID) -> list[Permission]:
         self._require_user(user_id)
         return list(
@@ -104,7 +108,7 @@ class RBACService:
             )
             if int(admin_count or 0) <= 1:
                 raise BusinessRuleError(
-                    "the last ADMIN role assignment cannot be removed"
+                    "不能移除系统中最后一个管理员角色"
                 )
         self._session.delete(assignment)
         self._session.commit()

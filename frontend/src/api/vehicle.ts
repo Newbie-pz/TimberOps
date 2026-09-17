@@ -23,3 +23,7 @@ export async function updateVehicle(
   const { data } = await request.patch<Vehicle>(`/vehicles/${id}`, payload)
   return data
 }
+
+export async function deleteVehicle(id: string, reason: string): Promise<void> {
+  await request.delete(`/vehicles/${id}`, { data: { reason } })
+}

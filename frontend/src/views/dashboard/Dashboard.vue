@@ -5,8 +5,10 @@ import { Box, DataLine, Goods, Odometer, TrendCharts, Warning } from '@element-p
 
 import { getMockDashboardStats, type DashboardStats } from '@/api/dashboard.mock'
 import PageHeader from '@/components/PageHeader.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const stats = ref<DashboardStats | null>(null)
 
 const cards = [
@@ -43,11 +45,11 @@ onMounted(async () => {
   <div class="dashboard-grid">
     <el-card shadow="never" class="panel-card quick-actions">
       <template #header><strong>快捷操作</strong></template>
-      <button type="button" @click="router.push('/weighing/create')">
+      <button v-if="authStore.hasPermission('weighing:create')" type="button" @click="router.push('/weighing/create')">
         <span>01</span>
         <div><strong>创建称重任务</strong><small>车辆入场登记并开始称重</small></div>
       </button>
-      <button type="button" @click="router.push('/weighing/history')">
+      <button v-if="authStore.hasPermission('weighing:view')" type="button" @click="router.push('/weighing/history')">
         <span>02</span>
         <div><strong>查看称重历史</strong><small>查询任务状态与全部读数</small></div>
       </button>

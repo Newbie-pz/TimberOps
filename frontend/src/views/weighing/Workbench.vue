@@ -15,6 +15,7 @@ import {
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import WeightValue from '@/components/WeightValue.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useWeighingStore } from '@/stores/weighing'
 import type { TaskDetailResponse, WeighingTask, WeightType } from '@/types'
 import {
@@ -29,6 +30,7 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const store = useWeighingStore()
 const detail = ref<TaskDetailResponse | null>(null)
 const loading = ref(false)
@@ -198,14 +200,16 @@ onMounted(loadTask)
               <template #append>t</template>
             </el-input>
             <el-input v-model="tareForm.remark" placeholder="备注（可选）" />
-            <el-button type="primary" size="large" :loading="acting" @click="submitTare">提交空车称重</el-button>
+            <el-button v-if="authStore.hasPermission('weighing:tare')" type="primary" size="large" :loading="acting" @click="submitTare">提交空车称重</el-button>
+            <el-alert v-else title="当前账号仅可查看，无皮重操作权限" type="info" :closable="false" show-icon />
           </div>
 
           <div v-else-if="task.status === 'TARE_COMPLETED'" class="operation-content centered">
             <div class="operation-symbol"><el-icon><Check /></el-icon></div>
             <h3>空车称重完成</h3>
             <p>已记录 <WeightValue :value="task.tare_weight_tons" />，装货完成后进入第二次称重。</p>
-            <el-button type="primary" size="large" :loading="acting" @click="runAction(() => finishLoading(taskId), '已进入重车待称状态')">装货完成，等待重车称重</el-button>
+            <el-button v-if="authStore.hasPermission('weighing:gross')" type="primary" size="large" :loading="acting" @click="runAction(() => finishLoading(taskId), '已进入重车待称状态')">装货完成，等待重车称重</el-button>
+            <el-alert v-else title="当前账号仅可查看，无毛重操作权限" type="info" :closable="false" show-icon />
           </div>
 
           <div v-else-if="task.status === 'WAIT_GROSS' && !isOverweight" class="operation-content">
@@ -217,7 +221,8 @@ onMounted(loadTask)
               <template #append>t</template>
             </el-input>
             <el-input v-model="grossForm.remark" placeholder="备注（可选）" />
-            <el-button type="primary" size="large" :loading="acting" @click="submitGross">提交重车称重</el-button>
+            <el-button v-if="authStore.hasPermission('weighing:gross')" type="primary" size="large" :loading="acting" @click="submitGross">提交重车称重</el-button>
+            <el-alert v-else title="当前账号仅可查看，无毛重操作权限" type="info" :closable="false" show-icon />
           </div>
 
           <div v-else-if="task.status === 'WAIT_GROSS' && isOverweight" class="operation-content danger-operation">
@@ -229,14 +234,16 @@ onMounted(loadTask)
             </el-input>
             <label>复磅说明（必填）</label>
             <el-input v-model="reweighForm.remark" type="textarea" :rows="3" placeholder="例如：卸货后重新称重" />
-            <el-button type="danger" size="large" :loading="acting" @click="submitReweigh">提交复磅</el-button>
+            <el-button v-if="authStore.hasPermission('weighing:gross')" type="danger" size="large" :loading="acting" @click="submitReweigh">提交复磅</el-button>
+            <el-alert v-else title="当前账号仅可查看，无复磅操作权限" type="info" :closable="false" show-icon />
           </div>
 
           <div v-else-if="task.status === 'GROSS_COMPLETED'" class="operation-content centered">
             <div class="operation-symbol"><el-icon><Check /></el-icon></div>
             <h3>称重结果正常</h3>
             <p>最终净货重 <WeightValue :value="task.net_weight_tons" prominent />，可以完成出厂。</p>
-            <el-button type="success" size="large" :loading="acting" @click="runAction(() => completeWeighingTask(taskId), '称重任务已完成')">确认完成出厂</el-button>
+            <el-button v-if="authStore.hasPermission('weighing:complete')" type="success" size="large" :loading="acting" @click="runAction(() => completeWeighingTask(taskId), '称重任务已完成')">确认完成出厂</el-button>
+            <el-alert v-else title="当前账号仅可查看，无完成任务权限" type="info" :closable="false" show-icon />
           </div>
 
           <div v-else-if="task.status === 'COMPLETED'" class="operation-content centered completed-state">

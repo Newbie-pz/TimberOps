@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.rbac import RoleRead
+
 
 def _normalize_username(value: str) -> str:
     username = value.strip().lower()
@@ -55,6 +57,12 @@ class UserRead(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+
+
+class UserAdminRead(UserRead):
+    """Administrative user summary with roles, never credential material."""
+
+    roles: list[RoleRead]
 
 
 class LoginResponse(BaseModel):

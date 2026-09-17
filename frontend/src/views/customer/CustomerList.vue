@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Plus, Refresh } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { Delete, Plus, Refresh } from '@element-plus/icons-vue'
 
-import { createCustomer, listCustomers, updateCustomer } from '@/api/customer'
+import { createCustomer, deleteCustomer, listCustomers, updateCustomer } from '@/api/customer'
 import PageHeader from '@/components/PageHeader.vue'
 import type { Customer, CustomerCreate } from '@/types'
+import { useAuthStore } from '@/stores/auth'
 
 const customers = ref<Customer[]>([])
+const authStore = useAuthStore()
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
@@ -69,13 +71,34 @@ async function submit(): Promise<void> {
   }
 }
 
+async function removeCustomer(customer: Customer): Promise<void> {
+  let reason = ''
+  try {
+    const result = await ElMessageBox.prompt(
+      `请输入删除客户“${customer.name}”的原因`,
+      '删除客户',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        inputValidator: (value) => Boolean(value?.trim()) || '必须填写删除原因',
+      },
+    )
+    reason = result.value.trim()
+  } catch {
+    return
+  }
+  await deleteCustomer(customer.id, reason)
+  ElMessage.success('客户已删除')
+  await loadCustomers()
+}
+
 onMounted(loadCustomers)
 </script>
 
 <template>
   <PageHeader title="客户管理" description="维护称重任务可选关联的基础客户信息">
     <el-button :icon="Refresh" @click="loadCustomers">刷新</el-button>
-    <el-button type="primary" :icon="Plus" @click="openCreate">新增客户</el-button>
+    <el-button v-if="authStore.hasPermission('customer:create')" type="primary" :icon="Plus" @click="openCreate">新增客户</el-button>
   </PageHeader>
 
   <el-card shadow="never" class="table-card">
@@ -84,8 +107,11 @@ onMounted(loadCustomers)
       <el-table-column prop="contact_name" label="联系人" min-width="120" />
       <el-table-column prop="phone" label="联系电话" min-width="150" />
       <el-table-column prop="remark" label="备注" min-width="220" show-overflow-tooltip />
-      <el-table-column label="操作" width="90" fixed="right">
-        <template #default="{ row }"><el-button link type="primary" @click="openEdit(row)">编辑</el-button></template>
+      <el-table-column v-if="authStore.hasPermission('customer:update') || authStore.hasPermission('customer:delete')" label="操作" width="140" fixed="right">
+        <template #default="{ row }">
+          <el-button v-if="authStore.hasPermission('customer:update')" link type="primary" @click="openEdit(row)">编辑</el-button>
+          <el-button v-if="authStore.hasPermission('customer:delete')" link type="danger" :icon="Delete" @click="removeCustomer(row)">删除</el-button>
+        </template>
       </el-table-column>
       <template #empty><el-empty description="暂无客户，可直接新增或创建无客户称重任务" /></template>
     </el-table>

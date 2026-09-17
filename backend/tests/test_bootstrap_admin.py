@@ -89,7 +89,7 @@ def test_last_admin_role_cannot_be_removed_through_rbac_service(
     admin_role = db_session.scalar(select(Role).where(Role.name == "ADMIN"))
     assert admin_role is not None
 
-    with pytest.raises(BusinessRuleError, match="last ADMIN"):
+    with pytest.raises(BusinessRuleError, match="最后一个管理员"):
         RBACService(db_session).remove_role(result.user.id, admin_role.id)
 
     assert _admin_count(db_session) == 1

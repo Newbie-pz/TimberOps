@@ -23,3 +23,7 @@ export async function updateCustomer(
   const { data } = await request.patch<Customer>(`/customers/${id}`, payload)
   return data
 }
+
+export async function deleteCustomer(id: string, reason: string): Promise<void> {
+  await request.delete(`/customers/${id}`, { data: { reason } })
+}

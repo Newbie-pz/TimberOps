@@ -92,6 +92,13 @@ export async function completeWeighingTask(id: string): Promise<WeighingTask> {
   return data
 }
 
+export async function deleteWeighingTask(
+  id: string,
+  reason: string,
+): Promise<void> {
+  await request.delete(`/weighing/tasks/${id}`, { data: { reason } })
+}
+
 export async function exportWeighingHistory(
   filters: WeighingExportFilters,
 ): Promise<WeighingExportFile> {

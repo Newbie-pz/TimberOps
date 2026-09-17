@@ -2,10 +2,11 @@
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.domain.exceptions import AuthenticationError, ConflictError
 from app.models.user import User
+from app.models.rbac import UserRole
 from app.schemas.auth import UserRegister
 from app.security.password import hash_password, verify_password
 
@@ -40,6 +41,16 @@ class UserService:
             raise ConflictError("username already exists") from exc
         self._session.refresh(user)
         return user
+
+    def list_users(self) -> list[User]:
+        """List users with roles eagerly loaded for the admin screen."""
+        return list(
+            self._session.scalars(
+                select(User)
+                .options(selectinload(User.role_links).selectinload(UserRole.role))
+                .order_by(User.created_at, User.id)
+            )
+        )
 
     def authenticate(self, *, username: str, password: str) -> User:
         user = self._session.scalar(

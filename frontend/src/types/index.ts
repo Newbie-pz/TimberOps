@@ -109,6 +109,7 @@ export interface WeighingTask {
   tare_time: string | null
   gross_time: string | null
   completed_at: string | null
+  created_by: string | null
   version: number
   created_at: string
   updated_at: string
@@ -144,6 +145,10 @@ export interface Permission {
   name: string
   description: string | null
   created_at: string
+}
+
+export interface ManagedUser extends User {
+  roles: Role[]
 }
 
 export interface WeighingTaskCreate {

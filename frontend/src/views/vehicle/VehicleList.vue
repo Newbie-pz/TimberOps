@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { Plus, Refresh } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { Delete, Plus, Refresh } from '@element-plus/icons-vue'
 
-import { createVehicle, listVehicles, updateVehicle } from '@/api/vehicle'
+import { createVehicle, deleteVehicle, listVehicles, updateVehicle } from '@/api/vehicle'
 import PageHeader from '@/components/PageHeader.vue'
 import WeightValue from '@/components/WeightValue.vue'
 import type { Vehicle, VehicleCreate, VehicleType, VehicleUpdate } from '@/types'
+import { useAuthStore } from '@/stores/auth'
 import { isValidTons, vehicleTypeLabel } from '@/utils/format'
 
 interface VehicleForm {
@@ -19,6 +20,7 @@ interface VehicleForm {
 }
 
 const vehicles = ref<Vehicle[]>([])
+const authStore = useAuthStore()
 const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
@@ -111,13 +113,34 @@ async function submit(): Promise<void> {
   }
 }
 
+async function removeVehicle(vehicle: Vehicle): Promise<void> {
+  let reason = ''
+  try {
+    const result = await ElMessageBox.prompt(
+      `请输入删除车辆 ${vehicle.plate_number} 的原因`,
+      '删除车辆',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        inputValidator: (value) => Boolean(value?.trim()) || '必须填写删除原因',
+      },
+    )
+    reason = result.value.trim()
+  } catch {
+    return
+  }
+  await deleteVehicle(vehicle.id, reason)
+  ElMessage.success('车辆已删除')
+  await loadVehicles()
+}
+
 onMounted(loadVehicles)
 </script>
 
 <template>
   <PageHeader title="车辆管理" description="维护车辆、常用司机和当前核定总质量">
     <el-button :icon="Refresh" @click="loadVehicles">刷新</el-button>
-    <el-button type="primary" :icon="Plus" @click="openCreate">新增车辆</el-button>
+    <el-button v-if="authStore.hasPermission('vehicle:create')" type="primary" :icon="Plus" @click="openCreate">新增车辆</el-button>
   </PageHeader>
 
   <el-card shadow="never" class="table-card">
@@ -134,8 +157,11 @@ onMounted(loadVehicles)
         <template #default="{ row }"><WeightValue :value="row.allowed_gross_weight_tons" /></template>
       </el-table-column>
       <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip />
-      <el-table-column label="操作" width="90" fixed="right">
-        <template #default="{ row }"><el-button link type="primary" @click="openEdit(row)">编辑</el-button></template>
+      <el-table-column v-if="authStore.hasPermission('vehicle:update') || authStore.hasPermission('vehicle:delete')" label="操作" width="140" fixed="right">
+        <template #default="{ row }">
+          <el-button v-if="authStore.hasPermission('vehicle:update')" link type="primary" @click="openEdit(row)">编辑</el-button>
+          <el-button v-if="authStore.hasPermission('vehicle:delete')" link type="danger" :icon="Delete" @click="removeVehicle(row)">删除</el-button>
+        </template>
       </el-table-column>
       <template #empty><el-empty description="暂无车辆，请先新增车辆" /></template>
     </el-table>

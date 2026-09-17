@@ -10,11 +10,21 @@ import {
   OfficeBuilding,
   Operation,
   SetUp,
+  User,
 } from '@element-plus/icons-vue'
+
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const collapsed = ref(false)
+
+const roleName = computed(() =>
+  authStore.roles
+    .map((role) => role.description || role.name)
+    .join(' / ') || '未分配角色',
+)
 
 const activeMenu = computed(() => {
   if (route.path.startsWith('/weighing/workbench')) return '/weighing/history'
@@ -23,6 +33,11 @@ const activeMenu = computed(() => {
 
 function navigate(path: string): void {
   void router.push(path)
+}
+
+async function logout(): Promise<void> {
+  authStore.logout()
+  await router.replace('/login')
 }
 </script>
 
@@ -49,25 +64,29 @@ function navigate(path: string): void {
           <el-icon><DataAnalysis /></el-icon>
           <template #title>首页</template>
         </el-menu-item>
-        <el-menu-item index="/vehicles">
+        <el-menu-item v-if="authStore.hasPermission('vehicle:view')" index="/vehicles">
           <el-icon><SetUp /></el-icon>
           <template #title>车辆管理</template>
         </el-menu-item>
-        <el-menu-item index="/customers">
+        <el-menu-item v-if="authStore.hasPermission('customer:view')" index="/customers">
           <el-icon><OfficeBuilding /></el-icon>
           <template #title>客户管理</template>
         </el-menu-item>
-        <el-menu-item index="/weighing/create">
+        <el-menu-item v-if="authStore.hasPermission('weighing:create')" index="/weighing/create">
           <el-icon><Goods /></el-icon>
           <template #title>称重任务</template>
         </el-menu-item>
-        <el-menu-item index="/weighing/history">
+        <el-menu-item v-if="authStore.hasPermission('weighing:view')" index="/weighing/history">
           <el-icon><List /></el-icon>
           <template #title>称重历史</template>
         </el-menu-item>
-        <el-menu-item index="/ai">
+        <el-menu-item v-if="authStore.hasPermission('ai:query')" index="/ai">
           <el-icon><ChatDotRound /></el-icon>
           <template #title>智能助手</template>
+        </el-menu-item>
+        <el-menu-item v-if="authStore.hasPermission('user:manage')" index="/users">
+          <el-icon><User /></el-icon>
+          <template #title>用户管理</template>
         </el-menu-item>
       </el-menu>
 
@@ -86,9 +105,19 @@ function navigate(path: string): void {
           <p class="topbar-eyebrow">TIMBEROPS / WEIGHBRIDGE</p>
           <h1>{{ route.meta.title }}</h1>
         </div>
-        <div class="system-state">
-          <span class="state-dot" />
-          系统运行正常
+        <div class="topbar-account">
+          <div class="account-copy">
+            <strong>{{ authStore.currentUser?.real_name }}</strong>
+            <span>{{ authStore.currentUser?.username }} · {{ roleName }}</span>
+          </div>
+          <el-dropdown trigger="click" @command="logout">
+            <el-button circle :icon="User" aria-label="用户菜单" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </header>
 

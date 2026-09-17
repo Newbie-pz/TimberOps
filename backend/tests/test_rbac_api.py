@@ -243,3 +243,31 @@ def test_admin_can_assign_role_and_user_can_read_grants(
 
     assert removed.status_code == 204
     assert roles_after_removal.json() == []
+
+
+def test_admin_can_list_users_and_role_catalog_without_password_hash(
+    api_client: TestClient,
+    db_engine: Engine,
+) -> None:
+    operator_headers = _headers_for_role(
+        db_engine,
+        "OPERATOR",
+        "user_list_operator",
+    )
+
+    denied = api_client.get("/api/v1/users", headers=operator_headers)
+    users = api_client.get("/api/v1/users")
+    roles = api_client.get("/api/v1/users/roles")
+
+    assert denied.status_code == 403
+    assert users.status_code == 200
+    assert roles.status_code == 200
+    admin = next(item for item in users.json() if item["username"] == "test_admin")
+    assert admin["is_active"] is True
+    assert [role["name"] for role in admin["roles"]] == ["ADMIN"]
+    assert "password_hash" not in admin
+    assert {role["name"] for role in roles.json()} == {
+        "ADMIN",
+        "OPERATOR",
+        "VIEWER",
+    }

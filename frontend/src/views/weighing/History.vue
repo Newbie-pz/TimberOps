@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { Download, Refresh, Search } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Delete, Download, Refresh, Search } from '@element-plus/icons-vue'
 
 import { listVehicles } from '@/api/vehicle'
-import { exportWeighingHistory, listWeighingTasks } from '@/api/weighing'
+import { deleteWeighingTask, exportWeighingHistory, listWeighingTasks } from '@/api/weighing'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import WeightValue from '@/components/WeightValue.vue'
 import type { CargoType, PaymentStatus, Vehicle, WeighingExportFilters, WeighingStatus, WeighingTask, WeighingTaskFilters } from '@/types'
 import { cargoTypeLabel, formatDateTime, statusLabel } from '@/utils/format'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const tasks = ref<WeighingTask[]>([])
 const vehicles = ref<Vehicle[]>([])
 const loading = ref(false)
@@ -76,6 +78,35 @@ async function downloadExport(): Promise<void> {
   }
 }
 
+function canDelete(task: WeighingTask): boolean {
+  return authStore.hasPermission('weighing:delete') && [
+    'WAIT_TARE',
+    'TARE_COMPLETED',
+    'WAIT_GROSS',
+  ].includes(task.status)
+}
+
+async function removeTask(task: WeighingTask): Promise<void> {
+  let reason = ''
+  try {
+    const result = await ElMessageBox.prompt(
+      `请输入删除任务 ${task.task_no} 的原因`,
+      '删除称重任务',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        inputValidator: (value) => Boolean(value?.trim()) || '必须填写删除原因',
+      },
+    )
+    reason = result.value.trim()
+  } catch {
+    return
+  }
+  await deleteWeighingTask(task.id, reason)
+  ElMessage.success('称重任务已删除')
+  await load()
+}
+
 onMounted(async () => {
   vehicles.value = await listVehicles()
   await load()
@@ -84,7 +115,7 @@ onMounted(async () => {
 
 <template>
   <PageHeader title="称重历史" description="查询任务当前汇总并进入工作台查看完整读数">
-    <el-button type="primary" @click="router.push('/weighing/create')">创建任务</el-button>
+    <el-button v-if="authStore.hasPermission('weighing:create')" type="primary" @click="router.push('/weighing/create')">创建任务</el-button>
   </PageHeader>
 
   <el-card shadow="never" class="filter-card">
@@ -125,7 +156,7 @@ onMounted(async () => {
       <el-form-item>
         <el-button type="primary" :icon="Search" @click="load">查询</el-button>
         <el-button :icon="Refresh" @click="reset">重置</el-button>
-        <el-button :icon="Download" :loading="exporting" @click="downloadExport">导出 Excel</el-button>
+        <el-button v-if="authStore.hasPermission('export:data')" :icon="Download" :loading="exporting" @click="downloadExport">导出 Excel</el-button>
       </el-form-item>
     </el-form>
   </el-card>
@@ -146,7 +177,12 @@ onMounted(async () => {
         <template #default="{ row }">{{ row.billing_record ? `${row.billing_record.fee_amount} 元` : '—' }}</template>
       </el-table-column>
       <el-table-column label="更新时间" min-width="180"><template #default="{ row }">{{ formatDateTime(row.updated_at) }}</template></el-table-column>
-      <el-table-column label="操作" width="90" fixed="right"><template #default="{ row }"><el-button link type="primary" @click.stop="router.push(`/weighing/workbench/${row.id}`)">查看</el-button></template></el-table-column>
+      <el-table-column label="操作" width="150" fixed="right">
+        <template #default="{ row }">
+          <el-button link type="primary" @click.stop="router.push(`/weighing/workbench/${row.id}`)">查看</el-button>
+          <el-button v-if="canDelete(row)" link type="danger" :icon="Delete" @click.stop="removeTask(row)">删除</el-button>
+        </template>
+      </el-table-column>
       <template #empty><el-empty description="没有符合条件的称重任务" /></template>
     </el-table>
   </el-card>

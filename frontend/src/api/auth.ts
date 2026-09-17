@@ -22,25 +22,17 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
   return data
 }
 
-export async function getCurrentUser(accessToken: string): Promise<User> {
-  const { data } = await request.get<User>('/auth/me', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
+export async function getCurrentUser(): Promise<User> {
+  const { data } = await request.get<User>('/auth/me')
   return data
 }
 
-export async function getCurrentUserRoles(accessToken: string): Promise<Role[]> {
-  const { data } = await request.get<Role[]>('/auth/roles', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
+export async function getCurrentUserRoles(): Promise<Role[]> {
+  const { data } = await request.get<Role[]>('/auth/roles')
   return data
 }
 
-export async function getCurrentUserPermissions(
-  accessToken: string,
-): Promise<Permission[]> {
-  const { data } = await request.get<Permission[]>('/auth/permissions', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
+export async function getCurrentUserPermissions(): Promise<Permission[]> {
+  const { data } = await request.get<Permission[]>('/auth/permissions')
   return data
 }
