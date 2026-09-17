@@ -18,6 +18,7 @@ os.environ.setdefault(
     "JWT_SECRET_KEY",
     "test-only-jwt-secret-key-32-characters-minimum",
 )
+os.environ.setdefault("PUBLIC_REGISTRATION_ENABLED", "true")
 
 import app.models  # noqa: F401  # Register all mapped tables.
 from app.db.session import get_db

@@ -28,7 +28,11 @@ router = APIRouter(prefix="/weighing", tags=["weighing"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-@router.get("/cargo-catalog", response_model=dict[str, list[str]])
+@router.get(
+    "/cargo-catalog",
+    response_model=dict[str, list[str]],
+    dependencies=[Depends(require_permission("weighing:view"))],
+)
 def cargo_catalog() -> dict[str, list[str]]:
     """Expose the domain-owned cargo-name choices to entry clients."""
     return get_cargo_catalog()
@@ -50,7 +54,11 @@ def create_task(
     return WeighingService(session).create_task(data, operator_id=current_user.id)
 
 
-@router.get("/tasks", response_model=list[WeighingTaskRead])
+@router.get(
+    "/tasks",
+    response_model=list[WeighingTaskRead],
+    dependencies=[Depends(require_permission("weighing:view"))],
+)
 def list_tasks(
     session: DbSession,
     cargo_type: CargoType | None = None,
@@ -69,7 +77,11 @@ def list_tasks(
     )
 
 
-@router.get("/tasks/{task_id}", response_model=TaskDetailResponse)
+@router.get(
+    "/tasks/{task_id}",
+    response_model=TaskDetailResponse,
+    dependencies=[Depends(require_permission("weighing:view"))],
+)
 def get_task_detail(task_id: UUID, session: DbSession) -> TaskDetailResponse:
     service = WeighingService(session)
     return TaskDetailResponse(
@@ -81,7 +93,11 @@ def get_task_detail(task_id: UUID, session: DbSession) -> TaskDetailResponse:
     )
 
 
-@router.get("/tasks/{task_id}/records", response_model=list[WeighingRecordRead])
+@router.get(
+    "/tasks/{task_id}/records",
+    response_model=list[WeighingRecordRead],
+    dependencies=[Depends(require_permission("weighing:view"))],
+)
 def list_task_records(task_id: UUID, session: DbSession) -> object:
     return WeighingService(session).list_records(task_id)
 
@@ -106,13 +122,21 @@ def record_tare(
     )
 
 
-@router.post("/tasks/{task_id}/loading", response_model=WeighingTaskRead)
+@router.post(
+    "/tasks/{task_id}/loading",
+    response_model=WeighingTaskRead,
+    dependencies=[Depends(require_permission("weighing:gross"))],
+)
 def start_loading(task_id: UUID, session: DbSession) -> object:
     """Compatibility endpoint; LOADING was removed and now returns WAIT_GROSS."""
     return WeighingService(session).start_loading(task_id)
 
 
-@router.post("/tasks/{task_id}/wait-gross", response_model=WeighingTaskRead)
+@router.post(
+    "/tasks/{task_id}/wait-gross",
+    response_model=WeighingTaskRead,
+    dependencies=[Depends(require_permission("weighing:gross"))],
+)
 def finish_loading(task_id: UUID, session: DbSession) -> object:
     """Move from completed tare weighing directly to WAIT_GROSS."""
     return WeighingService(session).finish_loading(task_id)

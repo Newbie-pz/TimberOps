@@ -1,5 +1,7 @@
 """Translate domain errors into the public API error envelope."""
 
+import logging
+
 from typing import TypedDict
 
 from fastapi import FastAPI, Request, status
@@ -23,6 +25,9 @@ from app.integrations.ai.exceptions import (
     AIUpstreamError,
     AIUpstreamTimeoutError,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class ErrorBody(TypedDict):
@@ -186,6 +191,24 @@ async def ai_agent_error_handler(
     )
 
 
+async def unexpected_error_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    """Log internal detail while returning a stable, non-sensitive response."""
+    logger.error(
+        "Unhandled API error method=%s path=%s type=%s",
+        request.method,
+        request.url.path,
+        type(exc).__name__,
+    )
+    return _error_response(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        code="INTERNAL_SERVER_ERROR",
+        message="系统异常，请稍后重试",
+    )
+
+
 def register_exception_handlers(application: FastAPI) -> None:
     """Register handlers once when constructing the application."""
     application.add_exception_handler(NotFoundError, resource_not_found_handler)
@@ -210,3 +233,4 @@ def register_exception_handlers(application: FastAPI) -> None:
     )
     application.add_exception_handler(AIUpstreamError, ai_upstream_error_handler)
     application.add_exception_handler(AIAgentError, ai_agent_error_handler)
+    application.add_exception_handler(Exception, unexpected_error_handler)

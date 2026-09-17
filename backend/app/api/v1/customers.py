@@ -18,22 +18,39 @@ router = APIRouter(prefix="/customers", tags=["customers"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-@router.post("", response_model=CustomerRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=CustomerRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("customer:create"))],
+)
 def create_customer(data: CustomerCreate, session: DbSession) -> object:
     return CustomerService(session).create_customer(data)
 
 
-@router.get("", response_model=list[CustomerRead])
+@router.get(
+    "",
+    response_model=list[CustomerRead],
+    dependencies=[Depends(require_permission("customer:view"))],
+)
 def list_customers(session: DbSession) -> object:
     return CustomerService(session).list_customers()
 
 
-@router.get("/{customer_id}", response_model=CustomerRead)
+@router.get(
+    "/{customer_id}",
+    response_model=CustomerRead,
+    dependencies=[Depends(require_permission("customer:view"))],
+)
 def get_customer(customer_id: UUID, session: DbSession) -> object:
     return CustomerService(session).get_customer(customer_id)
 
 
-@router.patch("/{customer_id}", response_model=CustomerRead)
+@router.patch(
+    "/{customer_id}",
+    response_model=CustomerRead,
+    dependencies=[Depends(require_permission("customer:update"))],
+)
 def update_customer(
     customer_id: UUID,
     data: CustomerUpdate,

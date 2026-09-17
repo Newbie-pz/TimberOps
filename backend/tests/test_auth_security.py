@@ -3,6 +3,7 @@
 from datetime import timedelta
 from uuid import uuid4
 
+import jwt
 import pytest
 
 from app.core.config import Settings
@@ -48,6 +49,38 @@ def test_access_token_can_be_created_and_decoded() -> None:
 
     assert claims.sub == user_id
     assert claims.username == "operator"
+    assert claims.jti
+    assert claims.iat < claims.exp
+
+
+def test_access_tokens_have_unique_jti_values() -> None:
+    user_id = uuid4()
+
+    first = decode_access_token(
+        create_access_token(user_id=user_id, username="operator", settings=_settings()),
+        settings=_settings(),
+    )
+    second = decode_access_token(
+        create_access_token(user_id=user_id, username="operator", settings=_settings()),
+        settings=_settings(),
+    )
+
+    assert first.jti != second.jti
+
+
+def test_token_missing_hardened_claims_is_rejected() -> None:
+    legacy_token = jwt.encode(
+        {
+            "sub": str(uuid4()),
+            "username": "operator",
+            "exp": 4_102_444_800,
+        },
+        TEST_SECRET,
+        algorithm="HS256",
+    )
+
+    with pytest.raises(TokenValidationError):
+        decode_access_token(legacy_token, settings=_settings())
 
 
 def test_expired_access_token_is_rejected() -> None:

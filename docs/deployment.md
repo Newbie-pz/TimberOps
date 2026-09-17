@@ -14,6 +14,14 @@ Copy `.env.example` to `.env` and replace every placeholder before deployment. I
 
 If a database password contains URL-significant characters, URL-encode it in `DATABASE_URL_DOCKER`. Keep `PUBLIC_REGISTRATION_ENABLED=false` unless public self-registration is explicitly required. AI and Doubao values remain optional when `AI_ENABLED=false`; real API keys must only be stored in the untracked `.env` file or a deployment secret store.
 
+Keep `ENABLE_API_DOCS=false` for production. The default Nginx deployment is same-origin, so `CORS_ALLOWED_ORIGINS` should normally remain empty. If the frontend is hosted on another origin, set an exact comma-separated HTTPS allowlist; wildcards are rejected.
+
+Run the redacting preflight check before building:
+
+```powershell
+python scripts/security_check.py
+```
+
 ## Build and start
 
 ```powershell

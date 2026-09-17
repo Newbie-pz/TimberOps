@@ -29,6 +29,7 @@ def _database_connect_args(url: str) -> dict[str, object]:
 engine: Engine = create_engine(
     database_url,
     pool_pre_ping=True,
+    hide_parameters=not settings.debug,
     connect_args=_database_connect_args(database_url),
 )
 
