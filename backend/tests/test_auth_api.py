@@ -1,9 +1,13 @@
 """Authentication API integration tests."""
 
 from fastapi.testclient import TestClient
+from sqlalchemy import Engine, func, select
+from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.main import app
+from app.models.rbac import UserRole
+from app.models.user import User
 
 
 REGISTER_PAYLOAD = {
@@ -128,6 +132,57 @@ def test_public_registration_enabled_keeps_register_available(
         app.dependency_overrides.pop(get_settings, None)
 
     assert response.status_code == 201
+
+
+def test_registration_status_reflects_only_public_switch(
+    api_client: TestClient,
+) -> None:
+    for enabled in (True, False):
+        settings = Settings(PUBLIC_REGISTRATION_ENABLED=enabled)
+        app.dependency_overrides[get_settings] = lambda: settings
+        try:
+            response = api_client.get(
+                "/api/v1/auth/registration-status",
+                headers={"Authorization": ""},
+            )
+        finally:
+            app.dependency_overrides.pop(get_settings, None)
+
+        assert response.status_code == 200
+        assert response.json() == {"enabled": enabled}
+
+
+def test_registered_user_has_no_role_and_cannot_submit_roles(
+    api_client: TestClient,
+    db_engine: Engine,
+) -> None:
+    rejected = api_client.post(
+        "/api/v1/auth/register",
+        json={**REGISTER_PAYLOAD, "roles": ["ADMIN"]},
+    )
+    created = api_client.post(
+        "/api/v1/auth/register",
+        json={**REGISTER_PAYLOAD, "username": "roleless_user"},
+    )
+    token = api_client.post(
+        "/api/v1/auth/login",
+        json={
+            "username": "roleless_user",
+            "password": REGISTER_PAYLOAD["password"],
+        },
+    ).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    assert rejected.status_code == 422
+    assert created.status_code == 201
+    assert api_client.get("/api/v1/auth/roles", headers=headers).json() == []
+    assert api_client.get("/api/v1/auth/permissions", headers=headers).json() == []
+    with Session(db_engine) as session:
+        user = session.scalar(select(User).where(User.username == "roleless_user"))
+        assert user is not None
+        assert session.scalar(
+            select(func.count(UserRole.id)).where(UserRole.user_id == user.id)
+        ) == 0
 
 
 def test_registration_switch_does_not_disable_login_or_me(

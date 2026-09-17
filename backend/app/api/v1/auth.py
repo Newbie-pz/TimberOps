@@ -10,7 +10,13 @@ from app.core.config import Settings, get_settings
 from app.db.session import get_db
 from app.domain.exceptions import RegistrationDisabledError
 from app.models.user import User
-from app.schemas.auth import LoginResponse, UserLogin, UserRead, UserRegister
+from app.schemas.auth import (
+    LoginResponse,
+    RegistrationStatusResponse,
+    UserLogin,
+    UserRead,
+    UserRegister,
+)
 from app.schemas.rbac import PermissionRead, RoleRead
 from app.security.jwt import create_access_token
 from app.services.rbac_service import RBACService
@@ -21,6 +27,19 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 DbSession = Annotated[Session, Depends(get_db)]
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+@router.get(
+    "/registration-status",
+    response_model=RegistrationStatusResponse,
+)
+def registration_status(
+    settings: SettingsDependency,
+) -> RegistrationStatusResponse:
+    """Expose only whether anonymous account registration is available."""
+    return RegistrationStatusResponse(
+        enabled=settings.public_registration_enabled,
+    )
 
 
 @router.post(

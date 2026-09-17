@@ -12,6 +12,10 @@ export interface LoginPayload {
   password: string
 }
 
+export interface RegistrationStatus {
+  enabled: boolean
+}
+
 export async function register(payload: RegisterPayload): Promise<User> {
   const { data } = await request.post<User>('/auth/register', payload)
   return data
@@ -19,6 +23,11 @@ export async function register(payload: RegisterPayload): Promise<User> {
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
   const { data } = await request.post<LoginResponse>('/auth/login', payload)
+  return data
+}
+
+export async function getRegistrationStatus(): Promise<RegistrationStatus> {
+  const { data } = await request.get<RegistrationStatus>('/auth/registration-status')
   return data
 }
 

@@ -16,6 +16,7 @@ class AuditLogRead(BaseModel):
     action: str
     target_type: str
     target_id: UUID | None
+    target_display: str | None
     reason: str | None
     before_value: dict[str, Any] | None
     after_value: dict[str, Any] | None

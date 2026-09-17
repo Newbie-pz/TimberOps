@@ -47,6 +47,7 @@ export interface AuditLog {
   action: string
   target_type: string
   target_id: string | null
+  target_display: string | null
   reason: string | null
   before_value: Record<string, unknown> | null
   after_value: Record<string, unknown> | null

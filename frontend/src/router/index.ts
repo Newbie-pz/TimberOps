@@ -25,10 +25,22 @@ const router = createRouter({
       meta: { title: '登录' },
     },
     {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/auth/Register.vue'),
+      meta: { title: '注册账号' },
+    },
+    {
       path: '/',
       component: MainLayout,
       meta: { requiresAuth: true },
       children: [
+        {
+          path: 'pending-access',
+          name: 'pending-access',
+          component: () => import('@/views/auth/PendingAccess.vue'),
+          meta: { title: '等待权限分配' },
+        },
         {
           path: '',
           name: 'dashboard',
@@ -114,11 +126,16 @@ router.beforeEach(async (to) => {
   const authStore = useAuthStore(pinia)
   const authenticated = await authStore.restoreSession()
 
-  if (to.name === 'login') {
-    return authenticated ? { path: '/' } : true
+  if (to.name === 'login' || to.name === 'register') {
+    if (!authenticated) return true
+    return authStore.roles.length ? { path: '/' } : { path: '/pending-access' }
   }
   if (to.matched.some((record) => record.meta.requiresAuth) && !authenticated) {
     return { path: '/login', query: { redirect: to.fullPath } }
+  }
+  if (authenticated && !authStore.roles.length && to.name !== 'pending-access') {
+    ElMessage.warning('当前账号尚未分配角色，请联系管理员。')
+    return { path: '/pending-access' }
   }
   if (to.meta.permission && !authStore.hasPermission(to.meta.permission)) {
     ElMessage.warning('当前账号没有访问该页面的权限')

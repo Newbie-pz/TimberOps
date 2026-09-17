@@ -71,3 +71,9 @@ class LoginResponse(BaseModel):
     access_token: str
     token_type: str = "Bearer"
     expires_in: int
+
+
+class RegistrationStatusResponse(BaseModel):
+    """Only the public-registration switch exposed to anonymous clients."""
+
+    enabled: bool

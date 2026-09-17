@@ -35,13 +35,22 @@ const actionLabels: Record<string, string> = {
 
 const targetTypeLabels: Record<string, string> = {
   WeighingTask: '称重任务',
+  WEIGHING_TASK: '称重任务',
   Vehicle: '车辆',
+  VEHICLE: '车辆',
   Customer: '客户',
+  CUSTOMER: '客户',
   BillingRecord: '费用记录',
+  BILLING_RECORD: '费用记录',
 }
 
 const actionOptions = Object.entries(actionLabels).map(([value, label]) => ({ value, label }))
-const targetTypeOptions = Object.entries(targetTypeLabels).map(([value, label]) => ({ value, label }))
+const targetTypeOptions = [
+  { value: 'WeighingTask', label: '称重任务' },
+  { value: 'Vehicle', label: '车辆' },
+  { value: 'Customer', label: '客户' },
+  { value: 'BillingRecord', label: '费用记录' },
+]
 const operatorOptions = computed(() =>
   Array.from(knownOperators.value, ([value, label]) => ({ value, label }))
     .sort((left, right) => left.label.localeCompare(right.label, 'zh-CN')),
@@ -162,11 +171,11 @@ onMounted(load)
           <small class="table-subtext">{{ row.action }}</small>
         </template>
       </el-table-column>
-      <el-table-column label="对象类型" min-width="130">
-        <template #default="{ row }">{{ targetTypeLabel(row.target_type) }}</template>
-      </el-table-column>
-      <el-table-column prop="target_id" label="对象ID" min-width="230">
-        <template #default="{ row }"><code>{{ row.target_id || '—' }}</code></template>
+      <el-table-column label="业务对象" min-width="260">
+        <template #default="{ row }">
+          <strong>{{ row.target_display || '—' }}</strong>
+          <small class="table-subtext">{{ targetTypeLabel(row.target_type) }}</small>
+        </template>
       </el-table-column>
       <el-table-column prop="reason" label="原因/备注" min-width="180" show-overflow-tooltip>
         <template #default="{ row }">{{ row.reason || '—' }}</template>
@@ -189,6 +198,7 @@ onMounted(load)
         <el-descriptions-item label="对象类型">{{ targetTypeLabel(selectedLog.target_type) }}</el-descriptions-item>
         <el-descriptions-item label="日志ID" :span="2"><code>{{ selectedLog.id }}</code></el-descriptions-item>
         <el-descriptions-item label="对象ID" :span="2"><code>{{ selectedLog.target_id || '—' }}</code></el-descriptions-item>
+        <el-descriptions-item label="业务对象名称" :span="2">{{ selectedLog.target_display || '—' }}</el-descriptions-item>
         <el-descriptions-item label="原因/备注" :span="2">{{ selectedLog.reason || '—' }}</el-descriptions-item>
       </el-descriptions>
       <div class="audit-change-grid">

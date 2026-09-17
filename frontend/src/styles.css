@@ -107,6 +107,15 @@ button, input, textarea { font: inherit; }
 .login-heading h2 { margin: 0; color: #183d36; font-size: 25px; }
 .login-heading p { margin: 9px 0 0; color: var(--muted); font-size: 13px; }
 .login-submit { width: 100%; margin-top: 8px; }
+.auth-switch { margin: 20px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
+.auth-switch a { color: var(--industrial-green); font-weight: 650; text-decoration: none; }
+.auth-switch a:hover { text-decoration: underline; }
+.register-card .el-card__body { padding-top: 30px; padding-bottom: 30px; }
+.pending-access-page { min-height: calc(100vh - 132px); display: grid; place-items: center; }
+.pending-access-card { width: 480px; padding: 34px; text-align: center; }
+.pending-access-card > .el-card__body > .el-icon { color: #d69b50; font-size: 48px; }
+.pending-access-card h2 { margin: 18px 0 8px; color: #183d36; }
+.pending-access-card p { margin: 0 0 24px; color: var(--muted); }
 .user-management-note { margin-bottom: 16px; }
 .role-tags { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
 .role-assignment { display: flex; gap: 8px; align-items: center; }

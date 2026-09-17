@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Lock, UserFilled } from '@element-plus/icons-vue'
 
 import { useAuthStore } from '@/stores/auth'
+import { getRegistrationStatus } from '@/api/auth'
 
 interface LoginForm {
   username: string
@@ -16,6 +17,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
+const registrationEnabled = ref(false)
 const form = reactive<LoginForm>({ username: '', password: '' })
 const rules: FormRules<LoginForm> = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -27,6 +29,11 @@ async function submit(): Promise<void> {
   submitting.value = true
   try {
     await authStore.login(form)
+    if (!authStore.roles.length) {
+      ElMessage.warning('当前账号尚未分配角色，请联系管理员。')
+      await router.replace('/pending-access')
+      return
+    }
     const redirect =
       typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
         ? route.query.redirect
@@ -36,6 +43,14 @@ async function submit(): Promise<void> {
     submitting.value = false
   }
 }
+
+onMounted(async () => {
+  try {
+    registrationEnabled.value = (await getRegistrationStatus()).enabled
+  } catch {
+    registrationEnabled.value = false
+  }
+})
 </script>
 
 <template>
@@ -89,6 +104,9 @@ async function submit(): Promise<void> {
           >
             登录
           </el-button>
+          <p v-if="registrationEnabled" class="auth-switch">
+            还没有账号？<RouterLink to="/register">注册账号</RouterLink>
+          </p>
         </el-form>
       </el-card>
     </section>
