@@ -5,6 +5,7 @@ from app.schemas.audit import AuditLogRead
 from app.schemas.billing import BillingRecordListItem, BillingRecordRead
 from app.schemas.customer import CustomerCreate, CustomerRead, CustomerUpdate
 from app.schemas.dashboard import DashboardOverview
+from app.schemas.report import BusinessReport
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.schemas.weighing import (
     CancelWeighingTaskInput,
@@ -29,6 +30,7 @@ __all__ = [
     "CustomerRead",
     "CustomerUpdate",
     "DashboardOverview",
+    "BusinessReport",
     "GrossWeightInput",
     "ReweighInput",
     "TaskDetailResponse",

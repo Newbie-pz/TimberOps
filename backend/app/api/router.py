@@ -12,6 +12,7 @@ from app.api.v1 import (
     customers,
     dashboard,
     export,
+    reports,
     users,
     vehicles,
     weighing,
@@ -35,6 +36,7 @@ v1_router.include_router(weighing.router)
 v1_router.include_router(dashboard.router)
 v1_router.include_router(billing.router)
 v1_router.include_router(audit.router)
+v1_router.include_router(reports.router)
 v1_router.include_router(export.router)
 v1_router.include_router(ai.router)
 api_router.include_router(v1_router)

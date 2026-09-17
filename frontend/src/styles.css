@@ -81,6 +81,10 @@ button, input, textarea { font: inherit; }
 .audit-change-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
 .audit-change-grid section > strong { display: block; margin-bottom: 8px; color: #40534f; font-size: 12px; }
 .audit-change-grid pre { min-height: 150px; max-height: 300px; margin: 0; padding: 14px; overflow: auto; border: 1px solid #dfe7e5; border-radius: 6px; background: #f6f8f7; color: #263d38; font: 12px/1.65 Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.report-toolbar .el-card__body { padding-bottom: 2px; }
+.report-content { min-height: 360px; }
+.report-metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.report-ranking-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
 .form-grid { display: grid; gap: 0 18px; }.two-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }.form-page-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(320px, .8fr); gap: 18px; }.form-card .el-button--large { width: 100%; margin-top: 8px; }.vehicle-snapshot-card { align-self: start; }.snapshot-plate { margin: 0 0 20px; font-size: 30px; font-weight: 750; letter-spacing: 2px; color: var(--industrial-green-dark); }
 .detail-list { margin: 0; }.detail-list > div { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #edf0ef; }.detail-list dt { color: var(--muted); font-size: 13px; }.detail-list dd { margin: 0; font-weight: 600; }.vehicle-snapshot-card .el-alert { margin-top: 20px; }
 .weight-value { color: #243b36; font-variant-numeric: tabular-nums; font-weight: 650; }.weight-value small { margin-left: 2px; color: #7c8c88; font-size: 11px; }.weight-value.is-prominent { font-size: 20px; }
@@ -162,6 +166,8 @@ button, input, textarea { font: inherit; }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
   .dashboard-metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .dashboard-analytics-grid { grid-template-columns: 1fr; }
+  .report-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .report-ranking-grid { grid-template-columns: 1fr; }
   .dashboard-grid, .form-page-grid { grid-template-columns: 1fr; }
   .workbench-grid { grid-template-columns: 1fr; }
   .ai-conversation { padding-right: 28px; padding-left: 28px; }

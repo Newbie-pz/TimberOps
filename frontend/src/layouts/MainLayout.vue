@@ -5,6 +5,7 @@ import {
   DataAnalysis,
   ChatDotRound,
   Document,
+  DataBoard,
   Fold,
   Goods,
   List,
@@ -89,6 +90,10 @@ async function logout(): Promise<void> {
         <el-menu-item v-if="authStore.hasPermission('audit:view')" index="/audit">
           <el-icon><Document /></el-icon>
           <template #title>审计日志</template>
+        </el-menu-item>
+        <el-menu-item v-if="authStore.hasPermission('report:view')" index="/reports">
+          <el-icon><DataBoard /></el-icon>
+          <template #title>业务报表</template>
         </el-menu-item>
         <el-menu-item v-if="authStore.hasPermission('ai:query')" index="/ai">
           <el-icon><ChatDotRound /></el-icon>

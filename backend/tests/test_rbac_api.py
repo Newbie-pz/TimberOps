@@ -232,6 +232,7 @@ def test_admin_can_assign_role_and_user_can_read_grants(
         "export:data",
         "ai:query",
         "dashboard:view",
+        "report:view",
     }
 
     removed = api_client.delete(

@@ -78,6 +78,12 @@ const router = createRouter({
           meta: { title: '审计日志', permission: 'audit:view' },
         },
         {
+          path: 'reports',
+          name: 'reports',
+          component: () => import('@/views/report/Report.vue'),
+          meta: { title: '业务报表', permission: 'report:view' },
+        },
+        {
           path: 'ai',
           name: 'ai-assistant',
           component: () => import('@/views/ai/Assistant.vue'),

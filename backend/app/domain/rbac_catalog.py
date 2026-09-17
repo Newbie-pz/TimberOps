@@ -29,6 +29,8 @@ PERMISSION_DEFINITIONS: tuple[tuple[str, str], ...] = (
     ("user:manage", "管理用户角色"),
     ("dashboard:view", "查看运营看板"),
     ("audit:view", "查看审计日志"),
+    ("report:view", "查看业务报表"),
+    ("report:export", "导出业务报表"),
 )
 
 OPERATOR_PERMISSION_CODES: frozenset[str] = frozenset(
@@ -49,6 +51,8 @@ OPERATOR_PERMISSION_CODES: frozenset[str] = frozenset(
         "ai:query",
         "dashboard:view",
         "audit:view",
+        "report:view",
+        "report:export",
     }
 )
 
@@ -61,6 +65,7 @@ VIEWER_PERMISSION_CODES: frozenset[str] = frozenset(
         "export:data",
         "ai:query",
         "dashboard:view",
+        "report:view",
     }
 )
 

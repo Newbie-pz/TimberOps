@@ -37,6 +37,8 @@ export type PermissionCode =
   | 'user:manage'
   | 'dashboard:view'
   | 'audit:view'
+  | 'report:view'
+  | 'report:export'
 
 export interface AuditLog {
   id: string
