@@ -36,6 +36,28 @@ export type PermissionCode =
   | 'ai:query'
   | 'user:manage'
   | 'dashboard:view'
+  | 'audit:view'
+
+export interface AuditLog {
+  id: string
+  operator_id: string | null
+  operator_name: string | null
+  action: string
+  target_type: string
+  target_id: string | null
+  reason: string | null
+  before_value: Record<string, unknown> | null
+  after_value: Record<string, unknown> | null
+  created_at: string
+}
+
+export interface AuditLogFilters {
+  start_date?: string
+  end_date?: string
+  operator_id?: string
+  action?: string
+  target_type?: string
+}
 
 export interface Vehicle {
   id: string

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   DataAnalysis,
   ChatDotRound,
+  Document,
   Fold,
   Goods,
   List,
@@ -84,6 +85,10 @@ async function logout(): Promise<void> {
         <el-menu-item v-if="authStore.hasPermission('billing:view')" index="/billing">
           <el-icon><Money /></el-icon>
           <template #title>费用管理</template>
+        </el-menu-item>
+        <el-menu-item v-if="authStore.hasPermission('audit:view')" index="/audit">
+          <el-icon><Document /></el-icon>
+          <template #title>审计日志</template>
         </el-menu-item>
         <el-menu-item v-if="authStore.hasPermission('ai:query')" index="/ai">
           <el-icon><ChatDotRound /></el-icon>
