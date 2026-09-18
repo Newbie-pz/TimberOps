@@ -25,6 +25,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url="/redoc" if docs_enabled else None,
         openapi_url="/openapi.json" if docs_enabled else None,
     )
+    application.state.settings = active_settings
     register_exception_handlers(application)
     application.include_router(api_router)
     application.add_middleware(AIRequestObservabilityMiddleware)
@@ -41,6 +42,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.add_middleware(
         RequestLoggingMiddleware,
         settings=active_settings,
+        routes=tuple(application.routes),
     )
     return application
 

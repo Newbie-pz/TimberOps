@@ -30,6 +30,10 @@ from app.models.billing import BillingRecord
 from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingRecord, WeighingTask
+from app.observability.metrics import (
+    record_billing_created,
+    record_weighing_completed,
+)
 from app.schemas.lifecycle import DeleteEntityInput
 from app.schemas.weighing import (
     CancelWeighingTaskInput,
@@ -299,7 +303,7 @@ class WeighingService:
         completed_at = utc_now()
         task.completed_at = completed_at
         task.version += 1
-        BillingService(self._session).ensure_record_for_completed_task(
+        billing_record = BillingService(self._session).ensure_record_for_completed_task(
             task,
             completed_at=completed_at,
         )
@@ -315,6 +319,11 @@ class WeighingService:
             )
         )
         self._commit("could not complete weighing task")
+        record_weighing_completed()
+        record_billing_created(
+            status=billing_record.payment_status.value,
+            amount=billing_record.fee_amount,
+        )
         return task
 
     def delete_task(

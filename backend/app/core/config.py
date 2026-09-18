@@ -25,6 +25,10 @@ class Settings(BaseSettings):
         default=True,
         validation_alias="ENABLE_API_DOCS",
     )
+    enable_metrics: bool = Field(
+        default=True,
+        validation_alias="ENABLE_METRICS",
+    )
     cors_allowed_origins: str = Field(
         default="",
         validation_alias="CORS_ALLOWED_ORIGINS",

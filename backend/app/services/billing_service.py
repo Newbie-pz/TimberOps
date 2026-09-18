@@ -14,6 +14,7 @@ from app.models.billing import BillingRecord, BillingRule
 from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
+from app.observability.metrics import record_billing_status_transition
 from app.schemas.billing import BillingRecordListItem
 
 
@@ -213,6 +214,7 @@ class BillingService:
             )
         )
         self._session.commit()
+        record_billing_status_transition(status=target.value)
         self._session.refresh(record)
         return record
 

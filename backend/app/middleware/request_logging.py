@@ -8,14 +8,17 @@ import re
 import sys
 from datetime import datetime, timezone
 from ipaddress import ip_address
+from re import Pattern
 from time import perf_counter
-from typing import Any
+from typing import Any, Iterable
 from uuid import uuid4
 
 from starlette.datastructures import Headers, MutableHeaders
+from starlette.routing import compile_path
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.config import Settings, get_settings
+from app.observability.metrics import observe_http_request
 from app.security.jwt import TokenValidationError, decode_access_token
 
 
@@ -40,9 +43,15 @@ def configure_request_logger() -> None:
 class RequestLoggingMiddleware:
     """Add a correlation ID and emit one safe JSON lifecycle record per request."""
 
-    def __init__(self, app: ASGIApp, settings: Settings | None = None) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        settings: Settings | None = None,
+        routes: Iterable[object] = (),
+    ) -> None:
         self.app = app
         self.settings = settings or get_settings()
+        self.route_templates = tuple(_collect_route_templates(routes))
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -71,7 +80,14 @@ class RequestLoggingMiddleware:
         try:
             await self.app(scope, receive, send_with_request_id)
         finally:
-            duration_ms = round((perf_counter() - started_at) * 1000, 2)
+            duration_seconds = perf_counter() - started_at
+            duration_ms = round(duration_seconds * 1000, 2)
+            observe_http_request(
+                method=str(scope.get("method", "")),
+                path=_metrics_path(scope, self.route_templates),
+                status_code=status_code,
+                duration_seconds=duration_seconds,
+            )
             record: dict[str, object] = {
                 "event": "http_request",
                 "timestamp": timestamp,
@@ -94,6 +110,42 @@ class RequestLoggingMiddleware:
                     ),
                 }
                 logger.warning(_serialize(slow_record))
+
+
+def _metrics_path(
+    scope: Scope,
+    route_templates: tuple[tuple[str, Pattern[str]], ...],
+) -> str:
+    """Use route templates to avoid PII and unbounded IDs in metric labels."""
+    requested_path = str(scope.get("path", ""))
+    for template, pattern in route_templates:
+        if pattern.fullmatch(requested_path):
+            return template
+    return "__unmatched__"
+
+
+def _collect_route_templates(
+    routes: Iterable[object],
+    prefix: str = "",
+) -> Iterable[tuple[str, Pattern[str]]]:
+    """Flatten FastAPI's lazy included routers into full path templates."""
+    for route in routes:
+        original_router = getattr(route, "original_router", None)
+        if original_router is not None:
+            context = getattr(route, "include_context", None)
+            nested_prefix = prefix + str(getattr(context, "prefix", ""))
+            yield from _collect_route_templates(
+                getattr(original_router, "routes", ()),
+                nested_prefix,
+            )
+            continue
+
+        path = getattr(route, "path", None)
+        if not isinstance(path, str):
+            continue
+        template = prefix + path
+        path_regex, _, _ = compile_path(template)
+        yield template, path_regex
 
 
 def _resolve_request_id(candidate: str | None) -> str:

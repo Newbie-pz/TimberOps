@@ -4,6 +4,7 @@ from typing import Literal, TypedDict
 
 from fastapi import APIRouter
 
+from app.api import metrics
 from app.api.v1 import (
     ai,
     audit,
@@ -27,6 +28,7 @@ class HealthResponse(TypedDict):
 
 
 api_router = APIRouter()
+api_router.include_router(metrics.router)
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth.router)
 v1_router.include_router(users.router)

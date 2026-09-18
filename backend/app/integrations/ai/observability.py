@@ -9,6 +9,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.config import get_settings
+from app.observability.metrics import observe_ai_request
 
 
 logger = logging.getLogger("timberops.ai")
@@ -54,8 +55,14 @@ class AIRequestObservabilityMiddleware:
         try:
             await self.app(scope, receive, send_with_request_id)
         finally:
-            duration_ms = round((perf_counter() - started_at) * 1000, 2)
+            duration_seconds = perf_counter() - started_at
+            duration_ms = round(duration_seconds * 1000, 2)
             success = response_status < 400
+            observe_ai_request(
+                provider=provider,
+                status=_status_label(response_status),
+                duration_seconds=duration_seconds,
+            )
             logger.info(
                 "AI request finished request_id=%s provider=%s model=%s "
                 "duration_ms=%.2f success=%s error_type=%s "
@@ -69,3 +76,12 @@ class AIRequestObservabilityMiddleware:
                 state.get("ai_tool_names", []),
                 state.get("ai_message_length", "unknown"),
             )
+
+
+def _status_label(status_code: int) -> str:
+    """Keep the status label bounded instead of emitting every HTTP code."""
+    if status_code < 400:
+        return "success"
+    if status_code < 500:
+        return "client_error"
+    return "server_error"

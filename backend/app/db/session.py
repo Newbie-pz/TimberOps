@@ -7,6 +7,7 @@ from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
+from app.observability.metrics import register_db_pool_metrics
 
 
 settings = get_settings()
@@ -32,6 +33,7 @@ engine: Engine = create_engine(
     hide_parameters=not settings.debug,
     connect_args=_database_connect_args(database_url),
 )
+register_db_pool_metrics(engine)
 
 SessionLocal = sessionmaker(
     bind=engine,
