@@ -14,7 +14,7 @@ from app.services.rbac_service import RBACService
 from app.services.user_service import UserService
 
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users", tags=["Users / RBAC"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 

@@ -15,7 +15,7 @@ from app.security.permissions import require_permission
 from app.services.billing_service import BillingService
 
 
-router = APIRouter(prefix="/billing", tags=["billing"])
+router = APIRouter(prefix="/billing", tags=["Billing"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
@@ -41,7 +41,12 @@ def list_billing_records(
     )
 
 
-@router.patch("/records/{record_id}/pay", response_model=BillingRecordRead)
+@router.patch(
+    "/records/{record_id}/pay",
+    response_model=BillingRecordRead,
+    summary="Mark a fee as paid",
+    description="Idempotently transition UNPAID to PAID and append an audit log.",
+)
 def pay_billing_record(
     record_id: UUID,
     session: DbSession,
@@ -56,7 +61,12 @@ def pay_billing_record(
     )
 
 
-@router.patch("/records/{record_id}/waive", response_model=BillingRecordRead)
+@router.patch(
+    "/records/{record_id}/waive",
+    response_model=BillingRecordRead,
+    summary="Waive a fee",
+    description="ADMIN-only idempotent transition from UNPAID to WAIVED.",
+)
 def waive_billing_record(
     record_id: UUID,
     session: DbSession,

@@ -15,11 +15,11 @@ from app.security.permissions import require_permission
 from app.services.report_service import ReportService
 
 
-router = APIRouter(prefix="/reports", tags=["reports"])
+router = APIRouter(prefix="/reports", tags=["Reports"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-@router.get("/daily", response_model=BusinessReport)
+@router.get("/daily", response_model=BusinessReport, summary="Daily business report")
 def daily_report(
     session: DbSession,
     _current_user: Annotated[
@@ -31,7 +31,11 @@ def daily_report(
     return ReportService(session).daily(report_date)
 
 
-@router.get("/monthly", response_model=BusinessReport)
+@router.get(
+    "/monthly",
+    response_model=BusinessReport,
+    summary="Monthly business report",
+)
 def monthly_report(
     session: DbSession,
     _current_user: Annotated[
@@ -44,7 +48,11 @@ def monthly_report(
     return ReportService(session).monthly(year=year, month=month)
 
 
-@router.get("/export")
+@router.get(
+    "/export",
+    summary="Export a business report",
+    description="Download the requested daily or monthly report as XLSX.",
+)
 def export_report(
     session: DbSession,
     _current_user: Annotated[

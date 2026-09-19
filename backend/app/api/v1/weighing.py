@@ -24,7 +24,7 @@ from app.security.permissions import require_permission
 from app.services.weighing_service import WeighingService
 
 
-router = APIRouter(prefix="/weighing", tags=["weighing"])
+router = APIRouter(prefix="/weighing", tags=["Weighing"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
@@ -42,6 +42,8 @@ def cargo_catalog() -> dict[str, list[str]]:
     "/tasks",
     response_model=WeighingTaskRead,
     status_code=status.HTTP_201_CREATED,
+    summary="Create a weighing task",
+    description="Create a WAIT_TARE task from active vehicle and optional customer data.",
 )
 def create_task(
     data: WeighingTaskCreate,
@@ -105,6 +107,8 @@ def list_task_records(task_id: UUID, session: DbSession) -> object:
 @router.post(
     "/tasks/{task_id}/tare",
     response_model=WeighingTaskRead,
+    summary="Record tare weight",
+    description="Append the first manual reading; only WAIT_TARE is accepted.",
 )
 def record_tare(
     task_id: UUID,
@@ -145,6 +149,8 @@ def finish_loading(task_id: UUID, session: DbSession) -> object:
 @router.post(
     "/tasks/{task_id}/gross",
     response_model=WeighingTaskRead,
+    summary="Record gross weight",
+    description="Append the first gross reading and calculate NORMAL or OVERWEIGHT.",
 )
 def record_gross(
     task_id: UUID,
@@ -165,6 +171,8 @@ def record_gross(
 @router.post(
     "/tasks/{task_id}/reweigh",
     response_model=WeighingTaskRead,
+    summary="Record an overweight reweigh",
+    description="Append a reasoned REWEIGH after an overweight result.",
 )
 def record_reweigh(
     task_id: UUID,
@@ -185,6 +193,8 @@ def record_reweigh(
 @router.post(
     "/tasks/{task_id}/complete",
     response_model=WeighingTaskRead,
+    summary="Complete a normal weighing task",
+    description="Complete only GROSS_COMPLETED tasks whose result is NORMAL.",
 )
 def complete_task(
     task_id: UUID,

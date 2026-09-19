@@ -1,194 +1,131 @@
 # TimberOps
 
-TimberOps 是面向中小型木材加工企业的智能运营与车辆称重管理平台。系统包含可独立运行的磅房模块，并逐步覆盖客户、订单、木材库存、出入库和审计。
+TimberOps 是面向中小型货运与加工场景的车辆称重和经营管理系统。当前支持木材、煤炭、矿石及其他货物，提供从车辆与客户建档、人工称重、超重复磅到计费、审计、报表的完整闭环。
 
-> 当前状态：Phase 2.5.1 Weighbridge UX。车辆称重闭环、联动货物目录、简化磅房流程、称重历史 Excel 导出、只读 Agent/MCP 及 AI 调用可靠性加固已完成。
+当前仓库处于 **Phase 2.7.4 / 开发版本 0.7.0**。它是可运行的工程项目，但不宣称已经完成生产部署或达到 v1.0 发布条件。
 
-## 业务定位
+## 已实现能力
 
-磅房不依赖木材订单，可为运输矿石、煤炭、木材或其他货物的车辆独立完成登记、两次称重、超重判断、复磅和磅单留痕。
+- 车辆、客户管理及历史数据保护
+- 人工皮重、毛重、超重复磅、任务完成和称重历史
+- Excel 称重历史及日/月经营报表导出
+- 完成称重后按车辆类型自动生成费用，支持支付与免除
+- 真实数据 Dashboard、费用中心、审计日志和经营报表
+- JWT 登录、公开注册开关、待授权账号体验、ADMIN / OPERATOR / VIEWER RBAC
+- Bootstrap Admin 安全初始化与最后一个管理员保护
+- 只读 LangGraph AI Agent 和豆包 Provider（可选）
+- 面向外部 Agent 的 Streamable HTTP MCP Server（只读）
+- 开发与生产 Docker Compose、Nginx 前端入口、PostgreSQL 持久化
+- 结构化请求日志、Prometheus-compatible Metrics、`/health` 与 `/ready`
 
-- `vehicle_id` 必填。
-- `cargo_type` 必填，V1 固定为 `ORE / COAL / TIMBER / OTHER`，前端使用下拉框。
-- `customer_id`、`order_id` 均可选。
-- 木材运输可选择关联 TimberOps 内部订单；普通过磅无需订单或库存记录。
-- 称重净重只是运输称重事实，不自动等同于订单履约量或库存变化。
+## 系统架构
 
-V1 支持“空车进厂、装货后重车出厂”，默认称重方向为 `OUTBOUND`。架构为未来增加 `INBOUND` 反向称重流程预留扩展点，但当前不实现。
-
-## 核心称重规则
-
-所有核心称重数据统一使用吨（t），数据库使用 `NUMERIC(10, 3)`，应用层使用 `Decimal`，禁止使用浮点数。
-
-```text
-net_weight_tons = gross_weight_tons - tare_weight_tons
-overweight_tons = max(gross_weight_tons - allowed_gross_weight_tons, 0)
+```mermaid
+flowchart TB
+    Browser[Browser] --> Web[Nginx / Vue SPA]
+    Web --> API[FastAPI]
+    API --> PG[(PostgreSQL)]
+    API --> W[Weighing]
+    API --> B[Billing]
+    API --> D[Dashboard / Reports]
+    API --> AU[Audit]
+    API --> AR[Auth / RBAC]
+    API --> Agent[LangGraph read-only Agent]
+    Agent --> Analytics[AnalyticsService]
+    Analytics --> PG
+    MCPClient[External MCP Client] --> MCP[MCP Server]
+    MCP --> Analytics
 ```
 
-任务创建时保存车辆核定总质量 `allowed_gross_weight_tons` 的快照。车辆档案以后发生变化，不影响历史任务和磅单。
+内部 LangGraph Agent 与外部 MCP Server 是两条独立入口；两者复用只读 `AnalyticsService`，AI 不可用不会阻塞核心称重业务。
 
-流程状态与称重结果彻底分离：
+## 核心业务流程
 
-- `status`：`WAIT_TARE / TARE_COMPLETED / WAIT_GROSS / GROSS_COMPLETED / COMPLETED / CANCELLED`
-- `weight_result`：`PENDING / NORMAL / OVERWEIGHT`
+正式任务状态为：
 
-超重车辆不得完成出厂，必须卸货、返回 `WAIT_GROSS` 并追加一条复磅记录。历史读数不可覆盖；只有最新有效的正常读数才能作为任务最终重量。
+`WAIT_TARE → TARE_COMPLETED → WAIT_GROSS → GROSS_COMPLETED → COMPLETED`
 
-货物一级分类保持 `COAL / ORE / TIMBER / OTHER`。煤炭、矿物和木材的具体品种由后端统一目录提供，`cargo_name` 可留空，创建页面只允许从对应分类目录选择。空车称重后无需维护单独的“装货中”状态，确认装货完成即可进入 `WAIT_GROSS`。
-
-称重历史可按日期、车辆、客户和货物类型导出 XLSX，包含磅单编号、车辆/司机/客户、货物信息、三项重量、状态和结果。导出日期按 UTC+08:00 的任务创建日期解释。
+`status` 表示任务生命周期；`weight_result` 独立表示 `PENDING / NORMAL / OVERWEIGHT`。超重时任务回到 `WAIT_GROSS`，接受重新称重，直至结果正常后完成。重量统一使用吨和 `Decimal`。
 
 ## 技术栈
 
-| 层级 | 技术 |
+- 后端：Python 3.11+、FastAPI、SQLAlchemy 2、Pydantic 2、Alembic、PostgreSQL、pytest
+- 前端：Vue 3、TypeScript、Vite、Element Plus、Pinia、Axios
+- AI / 集成：LangGraph、豆包 Provider、MCP Python SDK
+- 运行：Docker Compose、Nginx、Prometheus client
+
+## 本地开发
+
+```powershell
+Copy-Item .env.example .env
+# 修改 .env 中的数据库密码、DATABASE_URL 和 JWT_SECRET_KEY
+docker compose up -d db
+
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m alembic upgrade head
+python -m app.cli.bootstrap_admin
+python -m uvicorn app.main:app --reload
+```
+
+另开终端启动前端：
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+默认开发入口为 `http://localhost:5173`。API 文档仅在 `ENABLE_API_DOCS=true` 时开放。
+
+## Production Compose 快速启动
+
+```powershell
+Copy-Item .env.example .env
+# 至少修改 POSTGRES_PASSWORD、DATABASE_URL_DOCKER、JWT_SECRET_KEY、FRONTEND_PORT
+# AI 配置可选；生产建议 PUBLIC_REGISTRATION_ENABLED=false
+docker compose -f docker-compose.prod.yml config --quiet
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml ps
+```
+
+不要提交 `.env`。生产数据库地址必须使用 Compose 服务名 `db`，且 `DATABASE_URL_DOCKER` 中的密码要与 `POSTGRES_PASSWORD` 一致。
+
+## 运维端点
+
+| 端点 | 用途 |
 | --- | --- |
-| 后端 | Python 3.11+、FastAPI、SQLAlchemy 2.x、Pydantic、Alembic、pytest |
-| 前端 | Vue 3、TypeScript、Vite、Element Plus |
-| 数据库 | PostgreSQL |
-| AI | LangGraph、LangChain Core、豆包 / 火山方舟 OpenAI-compatible API |
-| Agent 协议 | MCP Python SDK、Streamable HTTP |
-| 基础设施 | Docker Compose、Git |
-
-项目采用模块化单体架构。称重、订单和库存拥有各自业务边界，需要关联时通过显式应用用例协调，而不是由称重完成隐式修改库存。
-
-## 仓库结构
-
-```text
-TimberOps/
-├── backend/
-│   ├── app/
-│   │   ├── api/             # HTTP 路由与依赖
-│   │   ├── core/            # 配置、安全、异常等横切能力
-│   │   ├── db/              # 数据库基础设施
-│   │   ├── domain/          # 称重枚举、异常与纯业务计算
-│   │   ├── models/          # SQLAlchemy 核心模型
-│   │   ├── schemas/         # Pydantic 请求与响应模型
-│   │   ├── services/        # 业务用例与只读统计查询
-│   │   └── integrations/
-│   │       ├── ai/          # Provider、Tools 与单 Agent Graph
-│   │       └── mcp/         # 外部 Agent 的只读 MCP Server
-│   ├── migrations/          # Alembic 迁移
-│   └── tests/               # 自动化测试
-├── frontend/                # Vue 3 磅房工作台与 AI 助手
-├── docs/                    # 架构、数据库、流程与计划
-├── .env.example
-└── docker-compose.yml
-```
-
-## 本地准备
-
-1. 安装 Docker Desktop 或兼容 Docker Compose 的运行时。
-2. 复制配置示例：
-
-   ```powershell
-   Copy-Item .env.example .env
-   ```
-
-3. 修改 `.env` 中的本地密码，不要提交真实凭据。
-4. 启动 PostgreSQL：
-
-   ```powershell
-   docker compose up -d db
-   ```
-
-后端与前端的详细启动步骤分别见各自 README。
-
-## 智能业务 Agent
-
-Phase 2.2 提供只读 Agent API：
-
-```text
-User
-  ↓
-TimberOps Agent
-  ↓
-LLM / Doubao
-  ↕
-Read-only Business Tools
-  ↓
-AnalyticsService
-  ↓
-PostgreSQL
-```
-
-Agent 通过真实 Tool Calling 自主选择五个受控业务查询工具。工具返回结构化数据，模型负责简洁解释；模型没有裸 SQL、数据库写入、Web Search 或称重操作能力。
-
-支持的问题示例：
-
-- “今天煤炭称了多少吨？”
-- “今天有没有超重车辆？”
-- “蒙H12345 最近称过什么货？”
-- “查询 WT-xxxx 的称重历史。”
-
-AI 默认关闭。配置方式和 API 示例见 [后端 README](backend/README.md)。
-
-### Vue AI 助手调用链
-
-```text
-Vue /ai
-  ↓ POST /api/v1/ai/chat
-FastAPI
-  ↓
-LangGraph Agent
-  ↓
-Doubao
-  ↓
-Read-only Business Tools
-  ↓
-AnalyticsService / PostgreSQL
-```
-
-AI 助手页面提供推荐业务问题、普通 HTTP 问答、可折叠 Tool Call 调试信息和只读安全提示。浏览器不保存长期会话，也不包含任何豆包 Key、Base URL 或模型配置。
-
-### AI 调用可靠性
-
-- Provider 网络请求默认 25 秒超时，由 SDK 最多重试 1 次。
-- 整次 LangGraph 执行默认 30 秒截止，浏览器 AI 专用超时默认 35 秒；普通业务 API 仍为 15 秒。
-- 上游超时、上游异常、Agent 内部异常分别映射为稳定的 504、502、500 错误，不向客户端暴露 SDK 原文。
-- 每次 AI 请求生成 UUID `X-Request-ID`，日志记录 provider、model、总耗时、成功状态、错误类型、工具名称和问题长度。
-- 日志不记录问题原文、Prompt、工具结果、API Key、数据库连接串或隐藏推理过程。
-
-## MCP 查询服务
-
-Phase 2.3 将五项 AnalyticsService 查询能力发布为标准 MCP Tools：
-
-```text
-External Agent
-  ↓ Streamable HTTP
-TimberOps MCP Server
-  ↓
-AnalyticsService
-  ↓
-PostgreSQL
-```
-
-MCP Server 返回结构化 JSON，不负责自然语言回答；LangGraph Agent 则由 TimberOps 内部豆包模型选择工具并生成回答。两者共享只读 AnalyticsService，但彼此不依赖。
-
-Vue AI 助手只调用 FastAPI Agent API，不连接 MCP Server。MCP 仍是外部 Agent 使用的独立工具协议入口。
-
-本地启动和客户端连接方式见 [后端 README](backend/README.md)。
+| `GET /health` | 进程存活检查，不访问数据库 |
+| `GET /ready` | PostgreSQL 就绪检查，采用短生命周期快速失败连接 |
+| `GET /metrics` | Prometheus 文本格式；由 `ENABLE_METRICS` 控制 |
+| `GET /docs` | Swagger UI；由 `ENABLE_API_DOCS` 控制 |
 
 ## 文档
 
 - [系统架构](docs/architecture.md)
-- [数据库设计](docs/database-design.md)
 - [业务流程](docs/business-flow.md)
-- [开发计划](docs/development-plan.md)
-
-## 工程约定
-
-- 数据库结构变更必须通过 Alembic 管理。
-- 配置来自环境变量，禁止硬编码账号、密码、密钥、法规限重或固定重量。
-- 核心业务规则放在应用/领域服务中，不放在路由或 ORM 事件中。
-- `WeighingRecord` 与 `AuditLog` 采用追加式留痕。
-- `COMPLETED` 任务普通用户不可修改，错误必须通过更正/冲正流程处理。
-- 关键状态跳转、重量计算、复磅、幂等和并发场景必须有 pytest 测试。
-- AI 只能调用受控的只读查询服务，不直接访问或写入数据库。
+- [数据库设计](docs/database-design.md)
+- [开发路线](docs/development-plan.md)
+- [生产部署](docs/deployment.md)
+- [安全基线](docs/security.md)
+- [可观测性](docs/observability.md)
+- [Metrics](docs/metrics.md)
+- [后端说明](backend/README.md)
+- [前端说明](frontend/README.md)
 
 ## 当前边界
 
-Phase 2.5.1 已完成 Vehicle、Customer、称重 REST API、联动货物目录、简化称重工作台、历史 XLSX 导出、只读业务 Agent、MCP Server、AI 助手前端及 AI 调用可靠性加固。订单、库存、鉴权、地磅设备、对话持久化、流式响应、MCP 远程认证、RAG 与多 Agent 尚未实现。
+当前没有订单、库存或物料主数据模块，也没有支付网关、真实磅秤适配器、任务冲正/作废流程、Refresh Token、SSO、多租户、RAG 或多 Agent 编排。MCP 默认仅绑定回环地址，远程暴露前必须补充认证与网络边界。
 
-## License
+## Production / v1.0 Checklist
 
-许可证尚未确定。在正式公开或接受外部贡献前补充 LICENSE 文件。
+- [ ] 使用强 PostgreSQL 密码并完成发布前 Secret 扫描
+- [ ] 为每个环境生成独立且足够长的 JWT Secret
+- [ ] 明确并验证公开注册策略
+- [ ] 在入口层配置 HTTPS / TLS
+- [ ] 建立并演练数据库备份与恢复
+- [ ] 远程暴露 MCP 时增加认证和访问控制
+- [ ] 完成 CI、工程检查和前端 bundle 优化
+- [ ] 接入真实磅秤前完成设备协议与故障降级验证

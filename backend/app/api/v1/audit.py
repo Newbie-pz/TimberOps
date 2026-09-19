@@ -14,11 +14,16 @@ from app.security.permissions import require_permission
 from app.services.audit_service import AuditService
 
 
-router = APIRouter(prefix="/audit", tags=["audit"])
+router = APIRouter(prefix="/audit", tags=["Audit"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-@router.get("/logs", response_model=list[AuditLogRead])
+@router.get(
+    "/logs",
+    response_model=list[AuditLogRead],
+    summary="Query audit logs",
+    description="Read filtered audit events with server-resolved target display values.",
+)
 def list_audit_logs(
     session: DbSession,
     _current_user: Annotated[

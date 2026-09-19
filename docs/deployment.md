@@ -10,7 +10,13 @@ TimberOps can run as four Docker Compose services: PostgreSQL, FastAPI, Nginx/Vu
 
 ## Configure the environment
 
-Copy `.env.example` to `.env` and replace every placeholder before deployment. In particular, set `POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, and both database URLs consistently. `DATABASE_URL` is for local development and normally uses `localhost`; `DATABASE_URL_DOCKER` is injected only into production containers and must use the Compose hostname `db`.
+Copy the template first:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Replace every placeholder before deployment. In particular, set `POSTGRES_PASSWORD`, `DATABASE_URL_DOCKER`, `JWT_SECRET_KEY`, and `FRONTEND_PORT`; AI settings are optional. `DATABASE_URL` is for local development and normally uses `localhost`; `DATABASE_URL_DOCKER` is injected only into production containers and must use the Compose hostname `db`.
 
 If a database password contains URL-significant characters, URL-encode it in `DATABASE_URL_DOCKER`. Keep `PUBLIC_REGISTRATION_ENABLED=false` unless public self-registration is explicitly required. AI and Doubao values remain optional when `AI_ENABLED=false`; real API keys must only be stored in the untracked `.env` file or a deployment secret store.
 
@@ -25,7 +31,7 @@ python scripts/security_check.py
 ## Build and start
 
 ```powershell
-docker compose -f docker-compose.prod.yml config
+docker compose -f docker-compose.prod.yml config --quiet
 docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml ps
 ```
@@ -95,3 +101,15 @@ python -m uvicorn app.main:app --reload
 cd ../frontend
 npm run dev
 ```
+
+## Production / v1.0 checklist
+
+These are release blockers or explicit deployment decisions, not completed capabilities:
+
+- [ ] Replace the PostgreSQL placeholder with a strong unique password and keep both database settings consistent.
+- [ ] Generate an environment-specific JWT secret of at least 32 random characters.
+- [ ] Confirm the intended public registration policy; production defaults to disabled.
+- [ ] Terminate HTTPS/TLS at a trusted reverse proxy or ingress.
+- [ ] Implement, schedule, and restore-test PostgreSQL backups.
+- [ ] Add authentication and network access control before exposing MCP remotely.
+- [ ] Run tests, builds, Alembic check, Compose validation, and `scripts/security_check.py` for the release artifact.

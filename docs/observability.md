@@ -41,8 +41,8 @@ endpoints:
 
 - `GET /health` is the liveness check. It proves only that the FastAPI process
   can answer HTTP and never accesses PostgreSQL, AI, MCP, or business services.
-- `GET /ready` is the readiness check. It executes `SELECT 1` through the
-  existing SQLAlchemy Engine and compares the database's Alembic revision heads
+- `GET /ready` is the readiness check. It executes `SELECT 1` through a
+  short-lived SQLAlchemy probe and compares the database's Alembic revision heads
   with the cached code heads. It returns `200` only when both checks pass and
   otherwise returns `503` with categorical statuses.
 - `GET /metrics` is the optional Prometheus scrape endpoint controlled by
@@ -64,4 +64,6 @@ collector without discarding failures.
 
 ## Future integrations
 
-Container stdout/stderr can be collected by Loki, ELK/OpenSearch, or a cloud logging agent. Each collector should parse the JSON message and index `request_id`, `status_code`, `duration_ms`, `path`, and user identity fields. Prometheus-compatible metrics are available separately; a future OpenTelemetry layer can reuse `request_id` as an application correlation field while adopting standard trace and span IDs.
+Container stdout/stderr can be collected by Loki, ELK/OpenSearch, or a cloud logging agent. Each collector should parse the JSON message and index `request_id`, `status_code`, `duration_ms`, `path`, and user identity fields. Prometheus-compatible metrics are available separately.
+
+`request_id` is an application correlation identifier, **not** a distributed `trace_id`. TimberOps currently has no OpenTelemetry instrumentation, distributed tracing, trace/span propagation, or Jaeger deployment. A future tracing layer would introduce standard trace and span IDs while retaining request id for log correlation.

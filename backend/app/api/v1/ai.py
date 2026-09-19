@@ -23,13 +23,18 @@ from app.schemas.ai import AIChatRequest, AIChatResponse, AIToolCallRead
 from app.security.permissions import require_permission
 
 
-router = APIRouter(prefix="/ai", tags=["ai"])
+router = APIRouter(prefix="/ai", tags=["AI"])
 
 
 @router.post(
     "/chat",
     response_model=AIChatResponse,
     dependencies=[Depends(require_permission("ai:query"))],
+    summary="Ask the read-only business assistant",
+    description=(
+        "Run the optional LangGraph agent with five allow-listed read-only tools. "
+        "No prompt, model response, or token content is logged as metrics."
+    ),
 )
 async def chat(
     payload: AIChatRequest,

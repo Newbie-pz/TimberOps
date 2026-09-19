@@ -12,11 +12,15 @@ from app.security.permissions import require_permission
 from app.services.dashboard_service import DashboardService
 
 
-router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
-@router.get("/overview", response_model=DashboardOverview)
+@router.get(
+    "/overview",
+    response_model=DashboardOverview,
+    summary="Current operations overview",
+)
 def get_dashboard_overview(
     session: DbSession,
     _current_user: Annotated[

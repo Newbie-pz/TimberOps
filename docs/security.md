@@ -40,3 +40,12 @@ Authentication resolves an active user on every request. Backend RBAC is the enf
 - MCP runs separately and binds to host loopback by default. Expose it remotely only behind appropriate firewall and authentication/network controls.
 - The backend image runs as the non-root `timberops` user, and Docker build contexts exclude `.env`, virtual environments, caches, and Git metadata.
 - Nginx emits basic browser hardening headers and hides its version token. TLS termination is outside Phase 2.7.2 and is required before internet-facing deployment.
+
+## Known limitations and release blockers
+
+- The SPA stores its access token in localStorage, so an XSS vulnerability could expose it.
+- JWTs have no server-side revocation list; key rotation invalidates all tokens, while ordinary tokens otherwise expire naturally.
+- The MCP server has no application-layer authentication for remote clients and must remain loopback/private until protected.
+- HTTPS/TLS is not configured by this repository and is required before internet-facing use.
+- A default, example, reused, or weak PostgreSQL password is a release blocker, even when the database has no published port.
+- Backup/restore and incident-response procedures remain deployment responsibilities and must be tested before v1.0.

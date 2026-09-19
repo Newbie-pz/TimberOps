@@ -52,7 +52,12 @@ v1_router.include_router(ai.router)
 api_router.include_router(v1_router)
 
 
-@api_router.get("/health", tags=["system"])
+@api_router.get(
+    "/health",
+    tags=["System / Observability"],
+    summary="Liveness check",
+    description="Confirm only that the FastAPI process can answer HTTP.",
+)
 def health_check() -> HealthResponse:
     """Report process health without requiring a database connection."""
     return {
@@ -61,7 +66,15 @@ def health_check() -> HealthResponse:
     }
 
 
-@api_router.get("/ready", tags=["system"])
+@api_router.get(
+    "/ready",
+    tags=["System / Observability"],
+    summary="Readiness check",
+    description=(
+        "Check PostgreSQL connectivity and Alembic revision compatibility "
+        "without running migrations."
+    ),
+)
 def readiness_check(
     service: Annotated[ReadinessService, Depends(get_readiness_service)],
 ) -> JSONResponse:

@@ -5,10 +5,17 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from app.observability.metrics import render_metrics
 
 
-router = APIRouter(tags=["observability"])
+router = APIRouter(tags=["System / Observability"])
 
 
-@router.get("/metrics", include_in_schema=False)
+@router.get(
+    "/metrics",
+    summary="Prometheus metrics",
+    description=(
+        "Return Prometheus text exposition when ENABLE_METRICS is enabled; "
+        "otherwise return 404. The endpoint never includes business identifiers."
+    ),
+)
 def metrics(request: Request) -> Response:
     """Expose Prometheus text format only when explicitly enabled."""
     settings = request.app.state.settings

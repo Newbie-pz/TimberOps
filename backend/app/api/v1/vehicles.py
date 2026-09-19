@@ -14,7 +14,7 @@ from app.security.permissions import require_permission
 from app.services.vehicle_service import VehicleService
 
 
-router = APIRouter(prefix="/vehicles", tags=["vehicles"])
+router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 

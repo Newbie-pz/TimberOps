@@ -4,6 +4,8 @@ TimberOps exposes Prometheus-compatible application metrics from the backend at
 `GET /metrics`. Set `ENABLE_METRICS=true` to enable the endpoint. When disabled,
 the same path returns `404` and does not reveal whether metrics are installed.
 
+The repository provides the scrape endpoint only; it does not deploy a Prometheus server, Grafana, or an alert manager.
+
 The endpoint is intentionally unauthenticated for Prometheus compatibility. In
 production, the backend has no published host port; a Prometheus instance should
 scrape `backend:8000/metrics` from the trusted Compose network. Do not proxy this
@@ -62,3 +64,5 @@ Useful initial alerts include sustained 5xx growth, high request-latency
 percentiles, AI error growth, and a checked-out connection count approaching the
 pool capacity. Alert thresholds should be established from actual production
 traffic rather than copied from development data.
+
+Request logging, liveness and readiness are documented separately in [observability.md](observability.md).

@@ -23,7 +23,7 @@ from app.services.rbac_service import RBACService
 from app.services.user_service import UserService
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="/auth", tags=["Auth"])
 DbSession = Annotated[Session, Depends(get_db)]
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
@@ -57,7 +57,12 @@ def register(
     return UserService(session).register(data)
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post(
+    "/login",
+    response_model=LoginResponse,
+    summary="Issue a JWT access token",
+    description="Authenticate an active user and return a short-lived Bearer token.",
+)
 def login(
     data: UserLogin,
     session: DbSession,

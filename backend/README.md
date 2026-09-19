@@ -1,329 +1,94 @@
 # TimberOps Backend
 
-TimberOps 后端负责 HTTP API、应用配置、数据库访问、称重领域能力和只读业务智能查询。当前完成 Phase 2.5.1：新增统一货物目录、简化称重状态机与称重历史 XLSX 导出；Agent 和独立 MCP Server 的既有查询能力保持不变。
+TimberOps 后端是一个 FastAPI 模块化单体，负责认证授权、车辆与客户、称重状态机、计费、审计、Dashboard、报表、只读 AI 与 MCP 查询。PostgreSQL 是唯一业务数据源，数据库结构由 Alembic 管理。
 
-## 技术栈
+## 技术栈与目录
 
-- Python 3.11+
-- FastAPI
-- SQLAlchemy 2.x
-- Pydantic v2 与 pydantic-settings
-- Alembic
-- PostgreSQL（psycopg 3）
-- pytest
-- openpyxl（称重历史 XLSX 导出）
-- LangGraph、LangChain Core、LangChain OpenAI
-- MCP Python SDK
-
-Phase 2.2 已验证版本：LangGraph 1.2.11、LangChain Core 1.6.3、LangChain OpenAI 1.6.2。
-Phase 2.3 已验证 MCP Python SDK 2.2.0。
-
-## 目录结构
+Python 3.11+、FastAPI、SQLAlchemy 2、Pydantic 2、pydantic-settings、Alembic、psycopg 3、PostgreSQL、pytest、LangGraph、MCP Python SDK、prometheus-client。
 
 ```text
 backend/
 ├── app/
-│   ├── main.py              # FastAPI 应用入口
-│   ├── api/
-│   │   ├── exceptions.py    # 统一领域异常转换
-│   │   ├── router.py        # 顶层 APIRouter 与健康检查
-│   │   └── v1/              # Vehicle、Customer、Weighing REST API
-│   ├── core/
-│   │   └── config.py        # 环境变量配置
-│   ├── db/
-│   │   ├── base.py          # SQLAlchemy DeclarativeBase
-│   │   └── session.py       # Engine、SessionLocal、get_db
-│   ├── domain/              # 枚举、异常和纯 Decimal 称重计算
-│   ├── models/              # 五个核心 SQLAlchemy 模型
-│   ├── schemas/             # Pydantic v2 输入/读取模型
-│   ├── services/            # 状态机服务与只读 AnalyticsService
-│   └── integrations/
-│       ├── ai/
-│       │   ├── providers/   # 可替换的 LLM Provider 与豆包实现
-│       │   ├── tools/       # 只读称重业务工具
-│       │   └── agent/       # LangGraph 状态、Prompt 与 Graph
-│       └── mcp/
-│           ├── server.py    # 独立 Streamable HTTP ASGI Server
-│           ├── tools.py     # AnalyticsService 的 MCP 适配器
-│           └── schemas.py   # MCP 强类型结构化输出
-├── migrations/
-│   ├── env.py               # Alembic 环境
-│   └── versions/            # 数据库版本脚本
-├── tests/
-│   └── test_health.py
-├── alembic.ini
-├── requirements.txt
-└── Dockerfile
+│   ├── api/                 # HTTP routers、依赖与异常映射
+│   ├── cli/                 # Bootstrap Admin 等运维命令
+│   ├── core/                # 环境配置
+│   ├── db/                  # Engine、Session、Base
+│   ├── domain/              # 枚举、状态机、RBAC Catalog
+│   ├── integrations/        # AI 与 MCP
+│   ├── middleware/          # 结构化请求日志
+│   ├── models/              # SQLAlchemy ORM
+│   ├── observability/       # Prometheus Metrics
+│   ├── schemas/             # API DTO
+│   ├── security/            # bcrypt、JWT、RBAC dependencies
+│   ├── services/            # 事务与业务服务
+│   └── main.py
+├── migrations/              # Alembic revisions
+├── scripts/                 # 安全检查
+└── tests/
 ```
 
-## 配置
+## 配置与启动
 
-配置通过系统环境变量或 `.env` 加载。后端从当前目录的 `.env` 或项目根目录的 `.env` 读取：
-
-```env
-DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/timberops
-APP_NAME=TimberOps backend
-DEBUG=false
-AI_ENABLED=false
-LLM_PROVIDER=doubao
-DOUBAO_API_KEY=
-DOUBAO_BASE_URL=
-DOUBAO_MODEL=
-AI_TEMPERATURE=0
-LLM_TIMEOUT_SECONDS=25
-LLM_MAX_RETRIES=1
-AI_AGENT_TIMEOUT_SECONDS=30
-MCP_HOST=127.0.0.1
-MCP_PORT=8001
-```
-
-不要提交真实密码。项目根目录已提供 `.env.example`。
-
-健康检查不访问数据库；使用数据库或 Alembic 时必须提供 `DATABASE_URL`。
-
-## 本地启动
-
-在项目根目录创建 `.env` 后：
+配置由根目录 `.env` 注入；不要在代码或仓库中保存密码、JWT Secret 或 AI Key。
 
 ```powershell
-Set-Location backend
+cd backend
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m alembic upgrade head
 python -m uvicorn app.main:app --reload
 ```
 
-访问：
+首个管理员必须显式执行 `python -m app.cli.bootstrap_admin` 初始化。
 
-- 健康检查：`http://localhost:8000/health`
-- Swagger UI：`http://localhost:8000/docs`
-- OpenAPI JSON：`http://localhost:8000/openapi.json`
+## 实际 API
 
-## REST API
+业务 API 使用 `/api/v1` 前缀；下表只列出当前 router 中存在的路径。
 
-所有业务接口使用 `/api/v1` 前缀：
+| 模块 | 方法与路径 |
+| --- | --- |
+| Auth | `GET /auth/registration-status`、`POST /auth/register`、`POST /auth/login`、`GET /auth/me`、`GET /auth/roles`、`GET /auth/permissions` |
+| Users / RBAC | `GET /users`、`POST /users`、`GET /users/roles`、`POST /users/{user_id}/roles`、`DELETE /users/{user_id}/roles/{role_id}` |
+| Vehicles | `GET/POST /vehicles`、`GET/PATCH/DELETE /vehicles/{vehicle_id}` |
+| Customers | `GET/POST /customers`、`GET/PATCH/DELETE /customers/{customer_id}` |
+| Weighing | `GET /weighing/cargo-catalog`、`GET/POST /weighing/tasks`、`GET/DELETE /weighing/tasks/{task_id}`、`GET /weighing/tasks/{task_id}/records` |
+| Weighing actions | `POST /weighing/tasks/{task_id}/tare`、`/loading`、`/wait-gross`、`/gross`、`/reweigh`、`/complete` |
+| Billing | `GET /billing/records`、`PATCH /billing/records/{record_id}/pay`、`PATCH /billing/records/{record_id}/waive` |
+| Dashboard | `GET /dashboard/overview` |
+| Audit | `GET /audit/logs` |
+| Reports | `GET /reports/daily`、`GET /reports/monthly`、`GET /reports/export` |
+| Export | `GET /export/weighing` |
+| AI | `POST /ai/chat` |
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST / GET | `/api/v1/vehicles` | 创建、列出车辆 |
-| GET / PATCH | `/api/v1/vehicles/{id}` | 查询、更新车辆档案 |
-| POST / GET | `/api/v1/customers` | 创建、列出客户 |
-| GET / PATCH | `/api/v1/customers/{id}` | 查询、更新客户 |
-| POST / GET | `/api/v1/weighing/tasks` | 创建、过滤查询称重任务 |
-| GET | `/api/v1/weighing/cargo-catalog` | 获取四类货物的联动名称目录 |
-| GET | `/api/v1/weighing/tasks/{id}` | 任务汇总及完整历史 |
-| GET | `/api/v1/weighing/tasks/{id}/records` | 按序查询称重读数 |
-| POST | `/api/v1/weighing/tasks/{id}/tare` | 记录皮重 |
-| POST | `/api/v1/weighing/tasks/{id}/loading` | 兼容旧客户端，直接进入等待毛重 |
-| POST | `/api/v1/weighing/tasks/{id}/wait-gross` | 从皮重完成进入等待毛重 |
-| POST | `/api/v1/weighing/tasks/{id}/gross` | 记录首次毛重并判定 |
-| POST | `/api/v1/weighing/tasks/{id}/reweigh` | 超重卸货后复磅 |
-| POST | `/api/v1/weighing/tasks/{id}/complete` | 完成正常任务 |
-| POST | `/api/v1/ai/chat` | 只读业务 Agent 问答 |
-| GET | `/api/v1/export/weighing` | 按日期、车辆、客户、货物类型导出 XLSX |
+根级运维端点为 `GET /health`、`GET /ready` 和 `GET /metrics`。`/loading` 是旧客户端兼容入口，不代表正式状态机中存在 `LOADING` 状态。
 
-任务列表支持 `cargo_type`、`status`、`vehicle_id` 查询参数。
+## 安全与业务边界
 
-## 只读 AI Agent
+- 密码仅保存 bcrypt hash；登录签发 HS256 JWT，包含 `sub`、`username`、`iat`、`jti`、`exp`。
+- 角色为 `ADMIN`、`OPERATOR`、`VIEWER`；权限定义以 `app/domain/rbac_catalog.py` 为准。
+- 公开注册关闭时注册接口拒绝请求；注册成功账号没有默认角色。
+- 前端隐藏仅改善体验，后端 `require_permission()` 是授权边界；审计操作人来自 JWT。
+- 正式状态流是 `WAIT_TARE → TARE_COMPLETED → WAIT_GROSS → GROSS_COMPLETED → COMPLETED`；超重由独立 `weight_result` 表示。
+- 仅任务成功完成时，按生效车辆类型规则生成唯一 `BillingRecord`。
 
-```text
-User
-  ↓
-TimberOps Agent（LangGraph）
-  ↓
-LLM Provider / Doubao
-  ↕ Tool Calling
-Read-only Business Tools
-  ↓
-AnalyticsService
-  ↓
-SQLAlchemy / PostgreSQL
-```
+## AI Agent 与 MCP
 
-Agent 不持有 SQL 工具，也不直接访问 Session。模型只能选择以下固定工具，工具只调用 `AnalyticsService`：
-
-- `get_today_weighing_summary`
-- `get_cargo_weight_summary`
-- `get_overweight_records`
-- `get_vehicle_weighing_history`
-- `get_weighing_task_detail`
-
-Agent 当前只能查询、统计、分析和解释，不能创建或修改车辆、客户、称重任务与称重记录。响应中的 `tool_calls` 只公开工具名称、参数和执行状态，不公开隐藏推理过程。
-
-示例请求：
-
-```http
-POST /api/v1/ai/chat
-Content-Type: application/json
-
-{"message": "今天煤炭称了多少吨？"}
-```
-
-可提问示例：
-
-- “今天煤炭称了多少吨？”
-- “今天有没有超重车辆？”
-- “蒙H12345 最近称过什么货？”
-- “查询 WT-xxxx 的称重历史。”
-
-AI 默认关闭。只有调用 Agent API 时才检查 Provider 配置；缺少配置或 `AI_ENABLED=false` 时返回 `503 AI_SERVICE_UNAVAILABLE`，健康检查和原有业务 API 继续正常工作。
-
-豆包配置步骤：
-
-1. 在火山方舟创建 API Key 和可调用的模型/推理接入点。
-2. 复制根目录 `.env.example` 为 `.env`。
-3. 设置 `AI_ENABLED=true`、`DOUBAO_API_KEY`、`DOUBAO_BASE_URL` 和 `DOUBAO_MODEL`。
-4. 重启后端。模型 ID 和 Base URL 均由环境提供，源码不内置具体值。
-
-LangGraph 使用单 Agent 循环：`START → Agent → (ToolNode → Agent)* → END`。首版不保存会话记忆。
-
-### AI 可靠性与可观测性
-
-`DoubaoProvider` 将 `LLM_TIMEOUT_SECONDS` 和 `LLM_MAX_RETRIES` 直接传给当前版本的 `ChatOpenAI`。默认一次调用 25 秒超时，首次失败后最多由 SDK 重试一次；应用层和前端不会追加自动重试。`AI_AGENT_TIMEOUT_SECONDS` 默认 30 秒，通过异步 LangGraph 调用和 `asyncio.timeout` 限制完整的模型/工具循环。配置启动时要求 Provider 超时严格小于 Agent 总超时。
-
-| 场景 | HTTP | 错误码 |
-| --- | ---: | --- |
-| AI 关闭或必要配置缺失 | 503 | `AI_SERVICE_UNAVAILABLE` |
-| Provider 或 Agent 总截止时间超时 | 504 | `AI_UPSTREAM_TIMEOUT` |
-| Provider 网络/API 异常 | 502 | `AI_UPSTREAM_ERROR` |
-| Agent Graph 非上游异常 | 500 | `AI_AGENT_ERROR` |
-
-每次 `POST /api/v1/ai/chat` 生成 UUID，并通过 `X-Request-ID` 响应头返回。标准日志记录 request ID、provider、model、`duration_ms`、成功状态、错误类型、工具名称及 `message_length`；不记录问题原文、完整 Prompt、工具结果、API Key、数据库 URL、上游响应正文或隐藏推理过程。
-
-## MCP Server
-
-Phase 2.3 增加独立、无状态的 Streamable HTTP MCP Server：
-
-```text
-External Agent / MCP Client
-  ↓ Streamable HTTP
-TimberOps MCP Tools
-  ↓
-AnalyticsService
-  ↓
-SQLAlchemy / PostgreSQL
-```
-
-启动：
+LangGraph Agent 服务于应用内 AI Chat；MCP Server 服务于外部 MCP Client。它们是独立入口，均复用只读 `AnalyticsService`，不直接写 SQL。AI 由 `AI_ENABLED` 控制，核心称重不依赖 AI。
 
 ```powershell
 python -m app.integrations.mcp.server
 ```
 
-默认连接地址：`http://127.0.0.1:8001/mcp`。也可以将 ASGI 应用交给 Uvicorn：
+## 数据库与测试
 
 ```powershell
-python -m uvicorn app.integrations.mcp.server:app --host 127.0.0.1 --port 8001
-```
-
-服务使用无状态 Streamable HTTP 和 JSON response，提供与 Agent 相同的五项查询能力。每个工具同时发布输入、输出 JSON Schema 和结构化结果，并带有 `readOnlyHint=true`、`openWorldHint=false` 标记。
-
-当前默认只监听本机地址，尚未实现公网身份认证；部署到非本机域名前必须先设计认证、授权、TLS 和允许的 Host/Origin。
-
-### MCP 与 LangGraph Agent 的区别
-
-| 能力 | LangGraph Agent | MCP Server |
-| --- | --- | --- |
-| 使用者 | TimberOps `/api/v1/ai/chat` | 外部 MCP Host / Agent |
-| 自然语言回答 | 由豆包生成 | 不生成，只返回结构化数据 |
-| 工具选择 | TimberOps 内部 LLM 自主选择 | 外部 MCP 客户端选择 |
-| 查询实现 | AnalyticsService | 同一个 AnalyticsService |
-| 数据写入 | 禁止 | 禁止 |
-
-MCP 层不依赖 LangGraph，也没有复制 SQL；两条入口只共享确定性的只读查询服务。
-
-领域错误统一返回：
-
-```json
-{
-  "error": {
-    "code": "INVALID_STATE",
-    "message": "human readable message"
-  }
-}
-```
-
-资源不存在为 `404 RESOURCE_NOT_FOUND`；非法状态为 `409 INVALID_STATE`；重复车牌、超重完成等为 `409 BUSINESS_CONFLICT`；请求参数验证保持 FastAPI 默认 422。
-
-运行测试：
-
-```powershell
-python -m pytest
-```
-
-运行 Alembic：
-
-```powershell
-python -m alembic current
 python -m alembic upgrade head
+python -m alembic check
+python -m pytest
+python ..\scripts\security_check.py
 ```
 
-当前迁移 `2e11a7a8e890_create_weighing_core_tables.py` 创建：
+禁止修改历史 migration。当前模型见 [数据库设计](../docs/database-design.md)，部署、安全和观测见 [deployment](../docs/deployment.md)、[security](../docs/security.md)、[observability](../docs/observability.md)。
 
-- `vehicles`
-- `customers`
-- `weighing_tasks`
-- `weighing_records`
-- `audit_logs`
-
-后续迁移 `8f4b2c1d9a70_simplify_weighing_and_optional_cargo_name.py` 将活动态 `LOADING` 安全归并为 `WAIT_GROSS`，更新状态检查约束，并解除 `OTHER` 必须填写具体名称的旧约束。字段和历史称重读数不变。
-
-`app/models/__init__.py` 会注册全部模型，Alembic 的 `target_metadata` 指向统一 `Base.metadata`。
-
-## 称重领域约定
-
-- UUID 作为五个核心实体的一致主键。
-- 重量使用 Python `Decimal` 和 PostgreSQL `NUMERIC(10,3)`，业务单位为吨。
-- `WeighingTask` 保存当前有效汇总；`WeighingRecord` 追加保存每次真实读数。
-- 任务创建时复制车辆核定总质量和司机信息，车辆档案修改不影响历史快照。
-- `status` 与 `weight_result` 分离，所有状态迁移只能由 `WeighingService` 执行。
-- 主流程为 `WAIT_TARE → TARE_COMPLETED → WAIT_GROSS → GROSS_COMPLETED → COMPLETED`，不再持久化 `LOADING`。
-- `cargo_name` 可为空；COAL、ORE、TIMBER 使用 `domain/cargo_catalog.py` 的统一目录，OTHER 的目录为空。
-- 超重后任务返回 `WAIT_GROSS`，后续必须追加带原因的 `REWEIGH`。
-- `COMPLETED` 和 `CANCELLED` 都不能恢复称重流程。
-- 取消原因与状态变化写入 `AuditLog`。
-
-本阶段没有创建 `order_id`。Order 表尚不存在，此时保留无外键逻辑字段会允许悬空引用；后续实现 Order 时再通过 Alembic 增加 nullable 外键。
-
-## Docker 启动
-
-先构建后端镜像：
-
-```powershell
-docker build -t timberops-backend .\backend
-```
-
-运行时通过环境文件提供配置；容器内连接根 Compose 的数据库时，应使用可解析的数据库主机名，而不是 `localhost`：
-
-```powershell
-docker run --rm -p 8000:8000 --env-file .env timberops-backend
-```
-
-Phase 1.2 仍未把后端服务加入根目录 `docker-compose.yml`。在后续 Compose 集成前，上述容器命令要求 `.env` 中的数据库地址可从容器访问；健康检查本身不连接数据库。
-
-## 当前实现范围
-
-已完成：
-
-- FastAPI 应用工厂和统一 APIRouter
-- `GET /health`
-- pydantic-settings 配置
-- SQLAlchemy Engine、SessionLocal 和请求依赖
-- Vehicle、Customer、WeighingTask、WeighingRecord、AuditLog
-- Pydantic v2 创建、更新、读取与称重命令 Schema
-- Decimal 称重计算、合法状态迁移、超重复磅和取消审计
-- Alembic 核心建表迁移及 Phase 2.5.1 状态/约束迁移
-- Vehicle、Customer 和 Weighing REST API
-- 统一业务异常响应
-- Swagger/OpenAPI 完整称重闭环
-- Dockerfile
-- 健康检查及称重领域测试
-- 只读 AnalyticsService 和五个结构化业务 Tool
-- 可替换 LLM Provider 与豆包 Provider
-- LangGraph Tool Calling Agent 和 `/api/v1/ai/chat`
-- 不调用真实模型的 Stub Agent 测试
-- Provider/Agent 超时、错误映射、Request ID 与安全日志测试
-- MCP Streamable HTTP Server、五个结构化查询工具和协议级测试
-- 四类货物联动目录、简化称重流程和称重历史 XLSX 导出
-
-未实现：用户、认证、RBAC、Order、Inventory、Material、磅单打印、真实设备、AI 流式响应、对话持久化、MCP 远程认证、RAG 和多 Agent。
+当前未实现订单、库存、物料主数据、支付网关、Refresh Token、JWT 撤销列表、真实磅秤适配器、冲正/作废流程；MCP 远程暴露尚无应用层认证。

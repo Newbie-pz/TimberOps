@@ -15,7 +15,7 @@ from app.services.export_service import ExportService
 from app.security.permissions import require_permission
 
 
-router = APIRouter(prefix="/export", tags=["export"])
+router = APIRouter(prefix="/export", tags=["Export"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 
