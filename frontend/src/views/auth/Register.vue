@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import {
-  ElMessage,
-  type FormInstance,
-  type FormItemRule,
-  type FormRules,
-} from 'element-plus'
+import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
 import { Lock, User, UserFilled } from '@element-plus/icons-vue'
 
 import { getRegistrationStatus, register } from '@/api/auth'

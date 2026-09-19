@@ -4,7 +4,7 @@ TimberOps 前端是 Vue 3 单页应用，面向磅房操作、经营查询和系
 
 ## 技术栈与启动
 
-Vue 3、TypeScript、Vite、Vue Router、Pinia、Axios、Element Plus、ECharts、xlsx。
+Vue 3、TypeScript、Vite、Vue Router、Pinia、Axios、Element Plus。
 
 ```powershell
 cd frontend
@@ -16,6 +16,14 @@ npm run build
 ```
 
 开发入口默认是 `http://localhost:5173`，`VITE_API_BASE_URL` 默认为 `/api/v1`。生产镜像由 Nginx 提供 SPA 文件并代理后端 API。
+
+## Production build 策略
+
+- 登录、注册、主 Layout 以及各业务页面均通过 Vue Router 动态导入；访问公开登录页不会预加载 AI、报表、审计、用户或费用页面。
+- Element Plus 使用 Vite resolver 按组件和样式导入，中文 locale 由根级 `el-config-provider` 保持一致。
+- 页面依赖随路由 chunk 加载，公共 Vue、Router、Pinia、Axios 和必要的 UI 运行时代码由 Vite 自动复用。
+- 当前没有人工 `manualChunks`；按需导入后的 chunk 边界已经清晰，避免为了移动体积而制造相互依赖的 vendor 分块。
+- Excel 文件由后端生成，前端只下载 Blob，因此不引入浏览器端 xlsx 库。
 
 ## 页面与路由
 

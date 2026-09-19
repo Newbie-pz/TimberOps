@@ -1,7 +1,5 @@
-import { ElMessage } from 'element-plus'
 import { createRouter, createWebHistory } from 'vue-router'
 
-import MainLayout from '@/layouts/MainLayout.vue'
 import { registerUnauthorizedHandler } from '@/auth/session'
 import { pinia } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
@@ -32,7 +30,7 @@ const router = createRouter({
     },
     {
       path: '/',
-      component: MainLayout,
+      component: () => import('@/layouts/MainLayout.vue'),
       meta: { requiresAuth: true },
       children: [
         {

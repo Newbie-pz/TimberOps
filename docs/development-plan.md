@@ -26,19 +26,19 @@
 | Phase 2.7.3.1 | JSON 请求日志、request id、慢请求检测 |
 | Phase 2.7.3.2 | Prometheus-compatible HTTP、AI、称重、计费和连接池指标 |
 | Phase 2.7.3.3 | `/health`、数据库 `/ready` 与运行时诊断；readiness 快速失败策略 |
+| Phase 2.7.4 | 仓库文档与真实实现对齐；OpenAPI 分组、说明和路径契约整理 |
 
-## Current — Phase 2.7.4
+## Current — Phase 2.7.5
 
-- 让根目录、后端、前端及 `docs/` 文档与真实实现一致
-- 整理 OpenAPI 标题、版本、业务 tags 和关键端点说明
-- 明确当前能力边界、生产启动流程与 v1.0 release blockers
-- 形成适合代码审查和作品集展示的统一文档基线
+- 路由级 lazy loading，包括公开页面、主 Layout 和全部业务页面
+- Element Plus 组件与样式按需导入
+- 缩小登录首屏入口并保持可理解的 chunk 边界
+- 验证 npm 和 Docker/Nginx production build
 
 ## Planned
 
 以下事项尚未实现，后续按风险和价值单独立项：
 
-- 前端 bundle optimization
 - CI / engineering checks
 - PostgreSQL backup / restore 流程与恢复演练
 - HTTPS / TLS 与完整 deployment checklist

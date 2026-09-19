@@ -1,5 +1,4 @@
 import axios, { AxiosError } from 'axios'
-import { ElMessage } from 'element-plus'
 
 import {
   clearAccessToken,
