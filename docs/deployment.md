@@ -48,6 +48,23 @@ The command does not accept a password argument and refuses to create another bo
 
 The single backend container runs `alembic upgrade head` before starting Uvicorn. If migration fails, the backend exits and dependent services do not start. The MCP service waits for the healthy backend and does not run migrations, which prevents concurrent migration attempts in this single-backend deployment.
 
+## Health and readiness
+
+The production backend container healthcheck calls `/ready`, not `/health`.
+This prevents the frontend and MCP services from treating a backend with an
+unavailable or migration-outdated database as ready for business traffic.
+
+- `/health` returns `200` while the FastAPI process is alive, even if PostgreSQL
+  is unavailable.
+- `/ready` returns `200` only when PostgreSQL accepts `SELECT 1` and its Alembic
+  revision matches the code head; otherwise it returns `503`.
+- `/metrics` exposes Prometheus metrics only when `ENABLE_METRICS=true`.
+
+These endpoints do not require JWT credentials and therefore expose only fixed
+status categories. The backend remains private to the Compose network. Docker
+healthchecks are useful process diagnostics but are not a replacement for a
+platform-specific traffic readiness mechanism.
+
 ## Logs
 
 ```powershell

@@ -1,4 +1,4 @@
-# HTTP request observability
+# HTTP request observability and runtime health
 
 Phase 2.7.3.1 adds a single structured request log for every FastAPI HTTP request and a correlation ID shared with the existing AI observability layer.
 
@@ -34,6 +34,34 @@ In the production Nginx topology, `X-Real-IP` is validated as an IPv4 or IPv6 ad
 
 Request logs never include headers, bearer tokens, cookies, request or response bodies, query strings, passwords, password hashes, database URLs, API keys, prompts, or AI responses. Unexpected exceptions record only their exception type in the internal error log; the request record contains metadata only.
 
+## Runtime endpoints
+
+The backend exposes three unauthenticated, deliberately narrow operational
+endpoints:
+
+- `GET /health` is the liveness check. It proves only that the FastAPI process
+  can answer HTTP and never accesses PostgreSQL, AI, MCP, or business services.
+- `GET /ready` is the readiness check. It executes `SELECT 1` through the
+  existing SQLAlchemy Engine and compares the database's Alembic revision heads
+  with the cached code heads. It returns `200` only when both checks pass and
+  otherwise returns `503` with categorical statuses.
+- `GET /metrics` is the optional Prometheus scrape endpoint controlled by
+  `ENABLE_METRICS` and documented in `docs/metrics.md`.
+
+Readiness never runs migrations. The production entrypoint remains solely
+responsible for `alembic upgrade head`. The business Engine keeps its existing
+10-second new-connection policy. Each readiness call instead creates a
+short-lived `NullPool` probe from the same SQLAlchemy URL and shared localhost
+IPv4 rules, applies a two-second connection timeout, and disposes it immediately.
+Responses never include connection URLs, SQL errors, revisions, exception
+messages, or paths.
+
+All three endpoints retain the normal request ID and HTTP metrics behavior.
+Successful probes currently use the standard INFO request record; failed
+readiness requests are WARNING records because they return `503`. If probe log
+volume becomes material, successful probe sampling can be added at the log
+collector without discarding failures.
+
 ## Future integrations
 
-Container stdout/stderr can be collected by Loki, ELK/OpenSearch, or a cloud logging agent. Each collector should parse the JSON message and index `request_id`, `status_code`, `duration_ms`, `path`, and user identity fields. Metrics and distributed tracing are intentionally not implemented in this phase; a future OpenTelemetry layer can reuse `request_id` as an application correlation field while adopting standard trace and span IDs.
+Container stdout/stderr can be collected by Loki, ELK/OpenSearch, or a cloud logging agent. Each collector should parse the JSON message and index `request_id`, `status_code`, `duration_ms`, `path`, and user identity fields. Prometheus-compatible metrics are available separately; a future OpenTelemetry layer can reuse `request_id` as an application correlation field while adopting standard trace and span IDs.

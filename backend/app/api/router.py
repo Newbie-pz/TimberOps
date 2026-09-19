@@ -1,8 +1,9 @@
 """Top-level API router."""
 
-from typing import Literal, TypedDict
+from typing import Annotated, Literal, TypedDict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 
 from app.api import metrics
 from app.api.v1 import (
@@ -18,6 +19,8 @@ from app.api.v1 import (
     vehicles,
     weighing,
 )
+from app.db.session import engine
+from app.observability.health import ReadinessService
 
 
 class HealthResponse(TypedDict):
@@ -25,6 +28,11 @@ class HealthResponse(TypedDict):
 
     status: Literal["ok"]
     service: str
+
+
+def get_readiness_service() -> ReadinessService:
+    """Bind readiness checks to the process-wide application Engine."""
+    return ReadinessService(engine)
 
 
 api_router = APIRouter()
@@ -51,3 +59,15 @@ def health_check() -> HealthResponse:
         "status": "ok",
         "service": "TimberOps backend",
     }
+
+
+@api_router.get("/ready", tags=["system"])
+def readiness_check(
+    service: Annotated[ReadinessService, Depends(get_readiness_service)],
+) -> JSONResponse:
+    """Report whether the backend can safely receive business traffic."""
+    result = service.check()
+    return JSONResponse(
+        status_code=200 if result.is_ready else 503,
+        content=result.to_payload(),
+    )
