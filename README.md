@@ -1,5 +1,7 @@
 # TimberOps
 
+[![CI](https://github.com/Newbie-pz/TimberOps/actions/workflows/ci.yml/badge.svg)](https://github.com/Newbie-pz/TimberOps/actions/workflows/ci.yml)
+
 TimberOps 是面向中小型货运与加工场景的车辆称重和经营管理系统。当前支持木材、煤炭、矿石及其他货物，提供从车辆与客户建档、人工称重、超重复磅到计费、审计、报表的完整闭环。
 
 当前仓库处于 **Phase 2.7.6 / 开发版本 0.7.0**。它是可运行的工程项目，但不宣称已经完成生产部署或达到 v1.0 发布条件。
