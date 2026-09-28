@@ -29,19 +29,20 @@
 | Phase 2.7.4 | 仓库文档与真实实现对齐；OpenAPI 分组、说明和路径契约整理 |
 | Phase 2.7.5 | 路由与 Layout lazy loading；Element Plus 按需导入；生产 bundle 优化 |
 | Phase 2.7.6 | GitHub Actions、Ruff、coverage 基线、migration、Compose 与 Docker build 质量门禁 |
+| Phase 2.8.1 | Secret 发布基线、PostgreSQL 备份/非覆盖恢复工具与隔离恢复演练 |
 
-## Current — Phase 2.8.1
+## Current — Phase 2.8.2
 
-- 生产 Secret 生成、存储、泄露处置与发布前检查清单
-- 基于 PostgreSQL 官方工具的 custom-format 手动备份
-- 默认拒绝覆盖现有数据库的恢复与完整性验证
-- PostgreSQL 16 隔离恢复演练
+- 可选 Compose TLS overlay 和 Nginx TLS termination
+- HTTP 到 HTTPS 重定向、现代 TLS 协议及 HTTPS-only HSTS
+- Proxy header 信任边界与公网 Metrics/API Docs 隔离
+- 自签名证书隔离集成演练（不代表公网可信证书）
 
 ## Planned
 
 以下事项尚未实现，后续按风险和价值单独立项：
 
-- HTTPS / TLS 入口层配置
+- 真实公网域名、可信 CA 证书及自动续期运维
 - 自动化备份调度、离机加密存储和保留策略执行
 - 真实 weighbridge adapter 及设备故障降级
 - 已完成业务的 correction / void workflow

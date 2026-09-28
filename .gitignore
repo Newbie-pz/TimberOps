@@ -43,6 +43,10 @@ backups/
 *.dump
 *.dump.json
 *.sql
+/certs/
+*.key
+privkey*.pem
+fullchain*.pem
 
 # Local database / Docker overrides
 *.sqlite3

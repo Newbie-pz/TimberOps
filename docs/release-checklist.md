@@ -18,7 +18,18 @@ Use this checklist for the exact release artifact and deployment environment. A 
 - [ ] `ENABLE_API_DOCS=false`
 - [ ] `CORS_ALLOWED_ORIGINS` is empty for same-origin deployment or contains only exact HTTPS origins
 - [ ] MCP remains bound to `127.0.0.1`, unless separate authentication, TLS, and network ACLs are in place
-- [ ] HTTPS/TLS terminates at a trusted reverse proxy or ingress
+- [ ] Public hostname is confirmed
+- [ ] Trusted TLS certificate is installed (a self-signed drill certificate does not satisfy this item)
+- [ ] TLS private key access is restricted and its rotation owner is known
+- [ ] HTTP redirects to HTTPS while preserving path and query
+- [ ] TLS 1.2 and TLS 1.3 are enabled; obsolete protocol negotiation fails
+- [ ] HSTS scope and max age are reviewed for the real hostname
+- [ ] Any configured CORS origin uses the exact production HTTPS origin
+- [ ] Backend port 8000 is not publicly exposed
+- [ ] PostgreSQL port 5432 is not publicly exposed
+- [ ] `/metrics` is not available through the public Nginx edge
+- [ ] API documentation remains disabled in production
+- [ ] MCP remains loopback/private unless separately authenticated and protected
 - [ ] `python scripts/security_check.py` passes
 
 ## Database
@@ -52,6 +63,6 @@ Use this checklist for the exact release artifact and deployment environment. A 
 
 ## Explicit remaining blockers
 
-- HTTPS/TLS is not implemented by this repository and is required before internet-facing release.
+- A real public hostname and trusted CA certificate are not supplied by this repository.
 - The MCP server has no application-layer authentication and must remain loopback/private.
 - Real weighbridge hardware integration and its failure handling have not been implemented.

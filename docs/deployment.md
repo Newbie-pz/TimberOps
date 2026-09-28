@@ -36,7 +36,9 @@ Run the redacting preflight check before building:
 python scripts/security_check.py
 ```
 
-## Build and start
+## HTTP/internal validation mode
+
+The base production Compose file remains certificate-free for local or trusted-network validation:
 
 ```powershell
 docker compose -f docker-compose.prod.yml config --quiet
@@ -45,6 +47,33 @@ docker compose -f docker-compose.prod.yml ps
 ```
 
 Open `http://localhost:8080`. Only Nginx is publicly exposed by default. The backend and database are available only on the internal Compose network.
+
+This mode does not provide transport encryption and is not suitable for an internet-facing release.
+
+## HTTPS production mode
+
+TLS terminates at Nginx. FastAPI continues to receive plain HTTP only over the private Compose network, and PostgreSQL remains private. Obtain a certificate for the approved public hostname from a trusted CA, store it outside Git, and configure host paths in `.env`:
+
+```dotenv
+HTTP_PORT=80
+HTTPS_PORT=443
+TLS_CERT_PATH=./certs/fullchain.pem
+TLS_KEY_PATH=./certs/privkey.pem
+```
+
+Protect the private key with host filesystem permissions limited to the deployment operator. Then validate and start the base file with the TLS overlay:
+
+```powershell
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml config --quiet
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml up -d --build
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml ps
+```
+
+The overlay replaces the frontend port list with HTTP 80 and HTTPS 443. HTTP returns a permanent `308` redirect that preserves path and query. HTTPS supports TLS 1.2 and TLS 1.3. Missing certificate or key files cause startup to fail; there is no silent HTTP fallback.
+
+Production Compose sets Uvicorn's `FORWARDED_ALLOW_IPS=*` so it can honor Nginx's HTTPS scheme and rewritten client address. This must not be copied to a deployment that publishes backend port 8000: its safety depends on Nginx being the only public HTTP boundary on the private Compose network.
+
+The repository contains no certificate, private key, hostname credential, or CA automation. The tested self-signed certificate proves technical integration only and is not browser- or publicly trusted.
 
 The MCP Streamable HTTP endpoint is `http://127.0.0.1:8001/mcp` by default. This loopback binding is intentional. Set `MCP_BIND_ADDRESS=0.0.0.0` only when an external client must connect and network access is protected separately.
 
@@ -102,6 +131,8 @@ unavailable or migration-outdated database as ready for business traffic.
   revision matches the code head; otherwise it returns `503`.
 - `/metrics` exposes Prometheus metrics only when `ENABLE_METRICS=true`.
 
+Nginx exposes `/health` and `/ready` through the web origin for operational probes. It explicitly returns `404` for `/metrics`, `/docs`, `/redoc`, and `/openapi.json`; Prometheus must scrape `backend:8000/metrics` from the private Docker network. Production API documentation also remains disabled by `ENABLE_API_DOCS=false`.
+
 These endpoints do not require JWT credentials and therefore expose only fixed
 status categories. The backend remains private to the Compose network. Docker
 healthchecks are useful process diagnostics but are not a replacement for a
@@ -140,4 +171,4 @@ npm run dev
 
 ## Production / v1.0 checklist
 
-Use the detailed [release readiness checklist](release-checklist.md). HTTPS/TLS remains a release blocker for internet-facing deployment. Remote MCP also remains blocked until authentication, TLS, and network controls are implemented.
+Use the detailed [release readiness checklist](release-checklist.md). The repository now supports an HTTPS edge, but a confirmed public hostname and trusted CA certificate remain deployment-specific release conditions. Remote MCP also remains blocked until authentication, TLS, and network controls are implemented.

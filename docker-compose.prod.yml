@@ -33,6 +33,8 @@ services:
       ENABLE_METRICS: ${ENABLE_METRICS:-true}
       PROMETHEUS_MULTIPROC_DIR: /tmp/timberops-prometheus
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      # Safe only because backend:8000 is not published outside this network.
+      FORWARDED_ALLOW_IPS: "*"
       DATABASE_URL: ${DATABASE_URL_DOCKER:?Set DATABASE_URL_DOCKER with host db in .env}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
       JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-60}

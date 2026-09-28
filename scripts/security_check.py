@@ -20,6 +20,9 @@ LITERAL_SECRET_PATTERN = re.compile(
     r"(?i)\b(?:api[_-]?key|password|secret|token)\b\s*[:=]\s*"
     r"(?P<quote>['\"])(?P<value>[^'\"]{8,})(?P=quote)"
 )
+PRIVATE_KEY_MARKER = re.compile(
+    r"-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----"
+)
 
 @dataclass(frozen=True)
 class Finding:
@@ -110,6 +113,35 @@ def _scan_tracked_sources(paths: list[Path]) -> list[Finding]:
     return findings
 
 
+def _scan_tracked_certificate_material(paths: list[Path]) -> list[Finding]:
+    """Reject private keys and deployment certificate directories in Git."""
+    findings: list[Finding] = []
+    for path in paths:
+        if not path.exists():
+            continue
+        relative = path.relative_to(ROOT)
+        name = path.name.lower()
+        if "certs" in relative.parts:
+            findings.append(
+                Finding("FAIL", f"deployment certificate material is tracked by Git: {relative}")
+            )
+            continue
+        filename_indicates_private_key = path.suffix.lower() == ".key" or (
+            name.startswith("privkey") and path.suffix.lower() == ".pem"
+        )
+        contains_private_key = False
+        if path.suffix.lower() in {".key", ".pem", ".crt"}:
+            try:
+                contains_private_key = bool(
+                    PRIVATE_KEY_MARKER.search(path.read_text(encoding="utf-8"))
+                )
+            except (OSError, UnicodeDecodeError):
+                pass
+        if filename_indicates_private_key or contains_private_key:
+            findings.append(Finding("FAIL", f"private key is tracked by Git: {relative}"))
+    return findings
+
+
 def run_checks() -> list[Finding]:
     """Return redacted findings without ever including a secret value."""
     findings: list[Finding] = []
@@ -139,6 +171,11 @@ def run_checks() -> list[Finding]:
             findings.append(Finding("FAIL", f"database backup is tracked by Git: {name}"))
     else:
         findings.append(Finding("PASS", "no database backup archives are tracked by Git"))
+
+    certificate_findings = _scan_tracked_certificate_material(tracked_files)
+    findings.extend(certificate_findings)
+    if not certificate_findings:
+        findings.append(Finding("PASS", "no private keys or deployment certs are tracked by Git"))
 
     source_findings = _scan_tracked_sources(visible_files)
     findings.extend(source_findings)

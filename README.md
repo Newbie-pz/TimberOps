@@ -4,7 +4,7 @@
 
 TimberOps 是面向中小型货运与加工场景的车辆称重和经营管理系统。当前支持木材、煤炭、矿石及其他货物，提供从车辆与客户建档、人工称重、超重复磅到计费、审计、报表的完整闭环。
 
-当前仓库处于 **Phase 2.8.1 / 开发版本 0.7.0**。它是可运行的工程项目，但不宣称已经完成生产部署或达到 v1.0 发布条件。
+当前仓库处于 **Phase 2.8.2 / 开发版本 0.7.0**。它是可运行的工程项目，但不宣称已经完成公网部署或达到 v1.0 发布条件。
 
 ## 已实现能力
 
@@ -18,6 +18,7 @@ TimberOps 是面向中小型货运与加工场景的车辆称重和经营管理�
 - 只读 LangGraph AI Agent 和豆包 Provider（可选）
 - 面向外部 Agent 的 Streamable HTTP MCP Server（只读）
 - 开发与生产 Docker Compose、Nginx 前端入口、PostgreSQL 持久化
+- 可选 Nginx TLS overlay、HTTP→HTTPS 重定向及生产 Edge 安全边界
 - 结构化请求日志、Prometheus-compatible Metrics、`/health` 与 `/ready`
 - GitHub Actions CI、Ruff、pytest coverage、前后端构建与 migration 检查
 
@@ -118,6 +119,7 @@ docker compose -f docker-compose.prod.yml ps
 - [工程质量与 CI](docs/engineering.md)
 - [v1.0 发布检查清单](docs/release-checklist.md)
 - [PostgreSQL 恢复演练记录](docs/recovery-drill.md)
+- [HTTPS/TLS 隔离演练记录](docs/tls-drill.md)
 - [后端说明](backend/README.md)
 - [前端说明](frontend/README.md)
 
@@ -130,7 +132,8 @@ docker compose -f docker-compose.prod.yml ps
 - [ ] 使用强 PostgreSQL 密码并完成发布前 Secret 扫描
 - [ ] 为每个环境生成独立且足够长的 JWT Secret
 - [ ] 明确并验证公开注册策略
-- [ ] 在入口层配置 HTTPS / TLS
+- [x] 提供并隔离验证 Nginx HTTPS/TLS 部署能力
+- [ ] 为实际公网域名安装可信 CA 证书并确认续期责任
 - [x] 建立手动数据库备份/非覆盖恢复工具并完成 PostgreSQL 16 隔离演练
 - [ ] 远程暴露 MCP 时增加认证和访问控制
 - [ ] 接入真实磅秤前完成设备协议与故障降级验证

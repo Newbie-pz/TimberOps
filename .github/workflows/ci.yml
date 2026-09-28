@@ -115,6 +115,10 @@ jobs:
       PUBLIC_REGISTRATION_ENABLED: "false"
       AI_ENABLED: "false"
       FRONTEND_PORT: "8080"
+      HTTP_PORT: "8080"
+      HTTPS_PORT: "8443"
+      TLS_CERT_PATH: ./certs/ci-fullchain.pem
+      TLS_KEY_PATH: ./certs/ci-privkey.pem
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -128,7 +132,19 @@ jobs:
         run: |
           docker compose config --quiet
           docker compose -f docker-compose.prod.yml config --quiet
+          docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml config --quiet
       - name: Build backend image
         run: docker build --tag timberops-backend:ci backend
       - name: Build frontend image
         run: docker build --tag timberops-frontend:ci frontend
+      - name: Validate TLS Nginx configuration
+        run: |
+          mkdir -p "$RUNNER_TEMP/timberops-tls"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj "/CN=localhost" \
+            -keyout "$RUNNER_TEMP/timberops-tls/privkey.pem" \
+            -out "$RUNNER_TEMP/timberops-tls/fullchain.pem" >/dev/null 2>&1
+          docker run --rm --add-host backend:127.0.0.1 \
+            -v "${{ github.workspace }}/frontend/nginx.tls.conf:/etc/nginx/conf.d/default.conf:ro" \
+            -v "$RUNNER_TEMP/timberops-tls:/etc/nginx/tls:ro" \
+            timberops-frontend:ci nginx -t

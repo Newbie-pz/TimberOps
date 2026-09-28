@@ -7,7 +7,7 @@ import logging
 import re
 import sys
 from datetime import datetime, timezone
-from ipaddress import ip_address
+from ipaddress import ip_address, ip_network
 from re import Pattern
 from time import perf_counter
 from typing import Any, Iterable
@@ -23,6 +23,17 @@ from app.security.jwt import TokenValidationError, decode_access_token
 
 logger = logging.getLogger("timberops.http")
 REQUEST_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
+TRUSTED_PROXY_NETWORKS = tuple(
+    ip_network(value)
+    for value in (
+        "127.0.0.0/8",
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+        "::1/128",
+        "fc00::/7",
+    )
+)
 
 
 def configure_request_logger() -> None:
@@ -173,17 +184,24 @@ def _resolve_token_identity(
 
 
 def _resolve_client_ip(scope: Scope, headers: Headers) -> str | None:
-    """Prefer Nginx's validated single IP and fall back to the direct peer."""
+    """Trust Nginx's rewritten client IP only from an internal direct peer."""
+    client = scope.get("client")
+    direct_peer = str(client[0]) if client else None
     forwarded = headers.get("x-real-ip")
-    if forwarded:
+    if forwarded and direct_peer and _is_trusted_proxy_peer(direct_peer):
         try:
             return str(ip_address(forwarded))
         except ValueError:
             pass
-    client = scope.get("client")
-    if client:
-        return str(client[0])
-    return None
+    return direct_peer
+
+
+def _is_trusted_proxy_peer(candidate: str) -> bool:
+    try:
+        address = ip_address(candidate)
+    except ValueError:
+        return False
+    return any(address in network for network in TRUSTED_PROXY_NETWORKS)
 
 
 def _level_for_status(status_code: int) -> int:
