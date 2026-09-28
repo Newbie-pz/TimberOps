@@ -93,7 +93,7 @@ python ..\scripts\security_check.py
 
 ```powershell
 python -m pip install -r requirements-dev.txt
-python -m ruff check . ..\scripts\security_check.py
+python -m ruff check . ..\scripts
 python -m pytest --cov=app --cov-report=term-missing
 ```
 

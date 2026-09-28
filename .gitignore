@@ -39,6 +39,10 @@ Thumbs.db
 logs/
 *.log
 tmp/
+backups/
+*.dump
+*.dump.json
+*.sql
 
 # Local database / Docker overrides
 *.sqlite3

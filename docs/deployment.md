@@ -18,6 +18,14 @@ Copy-Item .env.example .env
 
 Replace every placeholder before deployment. In particular, set `POSTGRES_PASSWORD`, `DATABASE_URL_DOCKER`, `JWT_SECRET_KEY`, and `FRONTEND_PORT`; AI settings are optional. `DATABASE_URL` is for local development and normally uses `localhost`; `DATABASE_URL_DOCKER` is injected only into production containers and must use the Compose hostname `db`.
 
+Generate separate strong values for the PostgreSQL password and JWT signing key. Run the command twice and copy each result directly into the untracked `.env` file:
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Do not reuse either value across environments. If a secret has appeared in Git history, chat, logs, screenshots, or support material, treat it as compromised and rotate it before deployment.
+
 If a database password contains URL-significant characters, URL-encode it in `DATABASE_URL_DOCKER`. Keep `PUBLIC_REGISTRATION_ENABLED=false` unless public self-registration is explicitly required. AI and Doubao values remain optional when `AI_ENABLED=false`; real API keys must only be stored in the untracked `.env` file or a deployment secret store.
 
 Keep `ENABLE_API_DOCS=false` for production. The default Nginx deployment is same-origin, so `CORS_ALLOWED_ORIGINS` should normally remain empty. If the frontend is hosted on another origin, set an exact comma-separated HTTPS allowlist; wildcards are rejected.
@@ -53,6 +61,34 @@ The command does not accept a password argument and refuses to create another bo
 ## Database migrations
 
 The single backend container runs `alembic upgrade head` before starting Uvicorn. If migration fails, the backend exits and dependent services do not start. The MCP service waits for the healthy backend and does not run migrations, which prevents concurrent migration attempts in this single-backend deployment.
+
+## Database backup and recovery
+
+TimberOps provides manual wrappers around the PostgreSQL 16 `pg_dump` and `pg_restore` binaries already present in the database container. The host needs Docker Compose and Python, but does not need a separate PostgreSQL client installation.
+
+Create a custom-format backup from the production Compose database:
+
+```powershell
+python scripts/backup_db.py
+```
+
+The command validates the Alembic revision and required tables before writing `backups/timberops_<UTC timestamp>.dump`. It writes through a temporary partial file, rejects empty output, and creates a sidecar JSON manifest containing the revision, size, and SHA-256 digest. Neither the archive nor manifest contains configuration metadata such as a password or database URL, although the archive itself contains business data and must be protected accordingly.
+
+Copy completed backups to access-controlled storage outside the application host. A practical starting policy is daily backups, weekly retained backups, and an additional backup immediately before each release or migration. These are operational recommendations; TimberOps does not currently schedule, upload, or delete backups automatically.
+
+Restore always requires an explicit backup file, a new database name, and the confirmation flag:
+
+```powershell
+python scripts/restore_db.py backups/timberops_20260928T090807Z.dump `
+  --target-database timberops_restore_20260928 `
+  --confirm-restore
+```
+
+The restore tool refuses the container's configured database and any database that already exists. It validates the archive and optional manifest before creating the target, restores without owners or privileges, then verifies the Alembic revision plus the `users`, `vehicles`, `customers`, `weighing_tasks`, `weighing_records`, `billing_records`, and `audit_logs` tables and their row counts. It never drops or overwrites the configured source database. A failed target is retained for diagnosis and must be removed manually after its exact identity has been reviewed.
+
+For a machine-migration or disaster-recovery drill, start a separate PostgreSQL 16 container and pass `--container <name>` to both tools. After validation, deliberately update the database name in `DATABASE_URL_DOCKER` and restart application services; the script never performs this cutover automatically. Verify application `/ready`, authentication, representative weighing history, billing, and audit records before accepting the restored database.
+
+The repository baseline has been exercised against two isolated PostgreSQL 16 containers; see the [Phase 2.8.1 recovery drill record](recovery-drill.md). Every deployment must still run and document its own restore drill because host storage, archive custody, data volume, and recovery-time requirements differ.
 
 ## Health and readiness
 
@@ -104,12 +140,4 @@ npm run dev
 
 ## Production / v1.0 checklist
 
-These are release blockers or explicit deployment decisions, not completed capabilities:
-
-- [ ] Replace the PostgreSQL placeholder with a strong unique password and keep both database settings consistent.
-- [ ] Generate an environment-specific JWT secret of at least 32 random characters.
-- [ ] Confirm the intended public registration policy; production defaults to disabled.
-- [ ] Terminate HTTPS/TLS at a trusted reverse proxy or ingress.
-- [ ] Implement, schedule, and restore-test PostgreSQL backups.
-- [ ] Add authentication and network access control before exposing MCP remotely.
-- [ ] Run tests, builds, Alembic check, Compose validation, and `scripts/security_check.py` for the release artifact.
+Use the detailed [release readiness checklist](release-checklist.md). HTTPS/TLS remains a release blocker for internet-facing deployment. Remote MCP also remains blocked until authentication, TLS, and network controls are implemented.

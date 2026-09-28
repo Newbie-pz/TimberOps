@@ -9,7 +9,11 @@ This document describes the Phase 2.7.2 security baseline. It does not replace h
 - Replace the example PostgreSQL password and URL-encode special characters when embedding it in a SQLAlchemy URL.
 - Set a Doubao key only when `AI_ENABLED=true`. The key is injected into the backend process and is never exposed to the Vue build.
 - Run `python scripts/security_check.py` before deployment. Its output identifies the category and location of a finding without printing the matched secret.
+- Generate `POSTGRES_PASSWORD` and `JWT_SECRET_KEY` independently with a cryptographically secure generator such as `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
+- If a secret appears in Git, chat, logs, screenshots, or support material, consider it compromised and rotate it. Deleting the visible copy is not sufficient.
 - HTTP request logs contain metadata only. They exclude headers, tokens, bodies, query strings, credentials, prompts, and AI responses.
+
+Database archives contain business and identity data even when they contain no configuration secrets. Store them outside the repository with restricted access and encryption appropriate to the deployment. `backups/`, `*.dump`, and `*.sql` are ignored, and the security check rejects tracked database exports. Never inspect or print archive contents in CI logs.
 
 ## JWT policy
 
@@ -48,4 +52,4 @@ Authentication resolves an active user on every request. Backend RBAC is the enf
 - The MCP server has no application-layer authentication for remote clients and must remain loopback/private until protected.
 - HTTPS/TLS is not configured by this repository and is required before internet-facing use.
 - A default, example, reused, or weak PostgreSQL password is a release blocker, even when the database has no published port.
-- Backup/restore and incident-response procedures remain deployment responsibilities and must be tested before v1.0.
+- Manual backup and non-overwriting restore tools are available, but scheduling, off-host encrypted storage, retention enforcement, and incident-response ownership remain deployment responsibilities.

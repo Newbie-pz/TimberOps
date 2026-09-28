@@ -50,7 +50,7 @@ Backend：
 ```powershell
 cd backend
 python -m pip install -r requirements-dev.txt
-python -m ruff check . ..\scripts\security_check.py
+python -m ruff check . ..\scripts
 python -m pytest
 python -m pytest --cov=app --cov-report=term-missing
 ```

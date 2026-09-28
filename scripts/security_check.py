@@ -122,11 +122,23 @@ def run_checks() -> list[Finding]:
     tracked_names = {
         path.relative_to(ROOT).as_posix()
         for path in tracked_files
+        if path.exists()
     }
     if ".env" in tracked_names:
         findings.append(Finding("FAIL", ".env is tracked by Git"))
     else:
         findings.append(Finding("PASS", ".env is not tracked by Git"))
+
+    tracked_backup_files = sorted(
+        name
+        for name in tracked_names
+        if name.endswith((".dump", ".sql")) or "backups" in Path(name).parts
+    )
+    if tracked_backup_files:
+        for name in tracked_backup_files:
+            findings.append(Finding("FAIL", f"database backup is tracked by Git: {name}"))
+    else:
+        findings.append(Finding("PASS", "no database backup archives are tracked by Git"))
 
     source_findings = _scan_tracked_sources(visible_files)
     findings.extend(source_findings)

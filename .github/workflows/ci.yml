@@ -38,7 +38,7 @@ jobs:
       - name: Install backend quality dependencies
         run: python -m pip install -r requirements-dev.txt
       - name: Ruff
-        run: python -m ruff check . ../scripts/security_check.py
+        run: python -m ruff check . ../scripts
       - name: Pytest and coverage baseline
         run: python -m pytest --cov=app --cov-report=term-missing
 

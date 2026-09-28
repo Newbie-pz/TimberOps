@@ -28,20 +28,21 @@
 | Phase 2.7.3.3 | `/health`、数据库 `/ready` 与运行时诊断；readiness 快速失败策略 |
 | Phase 2.7.4 | 仓库文档与真实实现对齐；OpenAPI 分组、说明和路径契约整理 |
 | Phase 2.7.5 | 路由与 Layout lazy loading；Element Plus 按需导入；生产 bundle 优化 |
+| Phase 2.7.6 | GitHub Actions、Ruff、coverage 基线、migration、Compose 与 Docker build 质量门禁 |
 
-## Current — Phase 2.7.6
+## Current — Phase 2.8.1
 
-- GitHub Actions CI 与最小权限、并发取消策略
-- Ruff、pytest-cov 和可重复的前后端质量命令
-- PostgreSQL migration、Security、Compose 与 Docker build 验证
-- npm/package-lock 包管理器统一
+- 生产 Secret 生成、存储、泄露处置与发布前检查清单
+- 基于 PostgreSQL 官方工具的 custom-format 手动备份
+- 默认拒绝覆盖现有数据库的恢复与完整性验证
+- PostgreSQL 16 隔离恢复演练
 
 ## Planned
 
 以下事项尚未实现，后续按风险和价值单独立项：
 
-- PostgreSQL backup / restore 流程与恢复演练
-- HTTPS / TLS 与完整 deployment checklist
+- HTTPS / TLS 入口层配置
+- 自动化备份调度、离机加密存储和保留策略执行
 - 真实 weighbridge adapter 及设备故障降级
 - 已完成业务的 correction / void workflow
 - Portfolio documentation 的持续整理
