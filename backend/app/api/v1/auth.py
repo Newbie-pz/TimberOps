@@ -22,7 +22,6 @@ from app.security.jwt import create_access_token
 from app.services.rbac_service import RBACService
 from app.services.user_service import UserService
 
-
 router = APIRouter(prefix="/auth", tags=["Auth"])
 DbSession = Annotated[Session, Depends(get_db)]
 SettingsDependency = Annotated[Settings, Depends(get_settings)]

@@ -7,7 +7,6 @@ from app.core.config import get_settings
 from app.db.session import SessionLocal
 from app.integrations.mcp.tools import SessionFactory, register_analytics_tools
 
-
 SERVER_NAME = "TimberOps Read-only Business Server"
 SERVER_VERSION = "0.1.0"
 

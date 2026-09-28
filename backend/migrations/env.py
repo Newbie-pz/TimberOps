@@ -6,10 +6,9 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.engine import make_url
 
+import app.models  # noqa: F401  # Register future models with Base.metadata.
 from app.core.config import get_settings
 from app.db.base import Base
-import app.models  # noqa: F401  # Register future models with Base.metadata.
-
 
 config = context.config
 

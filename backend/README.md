@@ -89,6 +89,16 @@ python -m pytest
 python ..\scripts\security_check.py
 ```
 
+开发质量依赖与完整检查：
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m ruff check . ..\scripts\security_check.py
+python -m pytest --cov=app --cov-report=term-missing
+```
+
+Coverage 当前作为可见基线报告，不设置硬性 fail-under。CI 设计见 [工程质量与 CI](../docs/engineering.md)。
+
 禁止修改历史 migration。当前模型见 [数据库设计](../docs/database-design.md)，部署、安全和观测见 [deployment](../docs/deployment.md)、[security](../docs/security.md)、[observability](../docs/observability.md)。
 
 当前未实现订单、库存、物料主数据、支付网关、Refresh Token、JWT 撤销列表、真实磅秤适配器、冲正/作废流程；MCP 远程暴露尚无应用层认证。

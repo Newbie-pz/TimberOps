@@ -22,7 +22,6 @@ from app.integrations.ai.exceptions import (
 from app.schemas.ai import AIChatRequest, AIChatResponse, AIToolCallRead
 from app.security.permissions import require_permission
 
-
 router = APIRouter(prefix="/ai", tags=["AI"])
 
 

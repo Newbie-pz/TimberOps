@@ -10,8 +10,8 @@ from app.domain.exceptions import CustomerHasHistoryError, NotFoundError
 from app.models.audit_log import AuditLog
 from app.models.customer import Customer
 from app.models.weighing import WeighingTask
-from app.schemas.lifecycle import DeleteEntityInput
 from app.schemas.customer import CustomerCreate, CustomerUpdate
+from app.schemas.lifecycle import DeleteEntityInput
 
 
 class CustomerService:

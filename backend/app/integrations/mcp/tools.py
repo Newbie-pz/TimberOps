@@ -20,7 +20,6 @@ from app.integrations.mcp.schemas import (
 )
 from app.services.analytics_service import AnalyticsService
 
-
 SessionFactory = Callable[[], Session]
 READ_ONLY_ANNOTATIONS = ToolAnnotations(
     readOnlyHint=True,

@@ -16,7 +16,6 @@ from app.integrations.mcp.server import (
     create_streamable_http_app,
 )
 
-
 EXPECTED_TOOLS = {
     "get_today_weighing_summary",
     "get_cargo_weight_summary",

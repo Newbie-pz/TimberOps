@@ -1,8 +1,8 @@
 """Public Pydantic request and response schemas."""
 
 from app.schemas.ai import AIChatRequest, AIChatResponse, AIToolCallRead
-from app.schemas.auth import RegistrationStatusResponse
 from app.schemas.audit import AuditLogRead
+from app.schemas.auth import RegistrationStatusResponse
 from app.schemas.billing import BillingRecordListItem, BillingRecordRead
 from app.schemas.customer import CustomerCreate, CustomerRead, CustomerUpdate
 from app.schemas.dashboard import DashboardOverview
@@ -12,8 +12,8 @@ from app.schemas.weighing import (
     CancelWeighingTaskInput,
     GrossWeightInput,
     ReweighInput,
-    TaskDetailResponse,
     TareWeightInput,
+    TaskDetailResponse,
     WeighingRecordRead,
     WeighingTaskCreate,
     WeighingTaskRead,

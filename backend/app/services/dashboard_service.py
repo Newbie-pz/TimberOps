@@ -19,7 +19,6 @@ from app.schemas.dashboard import (
     VehicleTransportRankingItem,
 )
 
-
 UTC_PLUS_8 = timezone(timedelta(hours=8))
 WEIGHT_ZERO = Decimal("0.000")
 MONEY_ZERO = Decimal("0.00")

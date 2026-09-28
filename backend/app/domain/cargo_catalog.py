@@ -4,7 +4,6 @@ from typing import Final
 
 from app.domain.enums import CargoType
 
-
 CARGO_CATALOG: Final[dict[CargoType, tuple[str, ...]]] = {
     CargoType.COAL: (
         "其他烟煤",

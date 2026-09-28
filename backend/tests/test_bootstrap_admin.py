@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.cli.bootstrap_admin import main
+from app.domain.exceptions import BusinessRuleError
 from app.domain.rbac_catalog import PERMISSION_DEFINITIONS
 from app.models.rbac import Role, UserRole
 from app.models.user import User
@@ -18,9 +19,7 @@ from app.services.bootstrap_admin_service import (
     BootstrapAdminService,
     ExistingUserPasswordError,
 )
-from app.domain.exceptions import BusinessRuleError
 from app.services.rbac_service import RBACService
-
 
 PASSWORD = "Bootstrap-Test-Password-123!"
 

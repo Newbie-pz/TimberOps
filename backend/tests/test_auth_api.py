@@ -9,7 +9,6 @@ from app.main import app
 from app.models.rbac import UserRole
 from app.models.user import User
 
-
 REGISTER_PAYLOAD = {
     "username": "ScaleOperator",
     "password": "TimberOps-Secret-123!",

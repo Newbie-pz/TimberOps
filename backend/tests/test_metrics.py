@@ -33,7 +33,6 @@ from app.services.billing_service import BillingService
 from app.services.vehicle_service import VehicleService
 from app.services.weighing_service import WeighingService
 
-
 TEST_SECRET = "metrics-test-jwt-secret-at-least-32-characters"
 
 

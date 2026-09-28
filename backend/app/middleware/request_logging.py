@@ -21,7 +21,6 @@ from app.core.config import Settings, get_settings
 from app.observability.metrics import observe_http_request
 from app.security.jwt import TokenValidationError, decode_access_token
 
-
 logger = logging.getLogger("timberops.http")
 REQUEST_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
 

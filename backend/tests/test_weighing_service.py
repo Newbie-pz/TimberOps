@@ -9,11 +9,11 @@ from sqlalchemy.orm import Session
 
 from app.domain.enums import (
     CargoType,
+    VehicleType,
     WeighingDirection,
     WeighingStatus,
     WeightResult,
     WeightType,
-    VehicleType,
 )
 from app.domain.exceptions import ValidationError
 from app.models.audit_log import AuditLog

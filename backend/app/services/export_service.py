@@ -14,7 +14,6 @@ from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
 
-
 BUSINESS_TIMEZONE = timezone(timedelta(hours=8))
 
 

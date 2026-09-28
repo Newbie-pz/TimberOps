@@ -14,7 +14,6 @@ from app.schemas.billing import BillingRecordListItem, BillingRecordRead
 from app.security.permissions import require_permission
 from app.services.billing_service import BillingService
 
-
 router = APIRouter(prefix="/billing", tags=["Billing"])
 DbSession = Annotated[Session, Depends(get_db)]
 

@@ -6,10 +6,10 @@ from threading import Lock
 from time import monotonic, sleep
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.tools import BaseTool
-import pytest
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool

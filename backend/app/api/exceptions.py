@@ -1,7 +1,6 @@
 """Translate domain errors into the public API error envelope."""
 
 import logging
-
 from typing import TypedDict
 
 from fastapi import FastAPI, Request, status
@@ -25,7 +24,6 @@ from app.integrations.ai.exceptions import (
     AIUpstreamError,
     AIUpstreamTimeoutError,
 )
-
 
 logger = logging.getLogger(__name__)
 

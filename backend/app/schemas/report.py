@@ -9,7 +9,6 @@ from pydantic import BaseModel
 
 from app.domain.enums import CargoType
 
-
 ReportType = Literal["daily", "monthly"]
 
 

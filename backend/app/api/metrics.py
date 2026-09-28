@@ -4,7 +4,6 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from app.observability.metrics import render_metrics
 
-
 router = APIRouter(tags=["System / Observability"])
 
 

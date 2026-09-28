@@ -5,11 +5,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.domain.exceptions import AuthenticationError, ConflictError
-from app.models.user import User
 from app.models.rbac import UserRole
+from app.models.user import User
 from app.schemas.auth import UserRegister
 from app.security.password import hash_password, verify_password
-
 
 _DUMMY_PASSWORD_HASH = hash_password("timberops-invalid-user-dummy-password")
 

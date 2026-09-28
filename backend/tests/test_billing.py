@@ -10,7 +10,12 @@ from sqlalchemy.orm import Session
 from app.domain.enums import CargoType, PaymentStatus, VehicleType
 from app.models.billing import BillingRecord
 from app.schemas.vehicle import VehicleCreate
-from app.schemas.weighing import GrossWeightInput, ReweighInput, TareWeightInput, WeighingTaskCreate
+from app.schemas.weighing import (
+    GrossWeightInput,
+    ReweighInput,
+    TareWeightInput,
+    WeighingTaskCreate,
+)
 from app.services.billing_service import BillingService
 from app.services.vehicle_service import VehicleService
 from app.services.weighing_service import WeighingService

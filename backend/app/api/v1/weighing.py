@@ -14,15 +14,14 @@ from app.schemas.lifecycle import DeleteEntityInput
 from app.schemas.weighing import (
     GrossWeightInput,
     ReweighInput,
-    TaskDetailResponse,
     TareWeightInput,
+    TaskDetailResponse,
     WeighingRecordRead,
     WeighingTaskCreate,
     WeighingTaskRead,
 )
 from app.security.permissions import require_permission
 from app.services.weighing_service import WeighingService
-
 
 router = APIRouter(prefix="/weighing", tags=["Weighing"])
 DbSession = Annotated[Session, Depends(get_db)]

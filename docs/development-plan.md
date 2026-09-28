@@ -27,19 +27,19 @@
 | Phase 2.7.3.2 | Prometheus-compatible HTTP、AI、称重、计费和连接池指标 |
 | Phase 2.7.3.3 | `/health`、数据库 `/ready` 与运行时诊断；readiness 快速失败策略 |
 | Phase 2.7.4 | 仓库文档与真实实现对齐；OpenAPI 分组、说明和路径契约整理 |
+| Phase 2.7.5 | 路由与 Layout lazy loading；Element Plus 按需导入；生产 bundle 优化 |
 
-## Current — Phase 2.7.5
+## Current — Phase 2.7.6
 
-- 路由级 lazy loading，包括公开页面、主 Layout 和全部业务页面
-- Element Plus 组件与样式按需导入
-- 缩小登录首屏入口并保持可理解的 chunk 边界
-- 验证 npm 和 Docker/Nginx production build
+- GitHub Actions CI 与最小权限、并发取消策略
+- Ruff、pytest-cov 和可重复的前后端质量命令
+- PostgreSQL migration、Security、Compose 与 Docker build 验证
+- npm/package-lock 包管理器统一
 
 ## Planned
 
 以下事项尚未实现，后续按风险和价值单独立项：
 
-- CI / engineering checks
 - PostgreSQL backup / restore 流程与恢复演练
 - HTTPS / TLS 与完整 deployment checklist
 - 真实 weighbridge adapter 及设备故障降级

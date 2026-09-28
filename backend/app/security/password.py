@@ -2,7 +2,6 @@
 
 import bcrypt
 
-
 _BCRYPT_MAX_PASSWORD_BYTES = 72
 
 

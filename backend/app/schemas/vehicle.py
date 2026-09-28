@@ -9,7 +9,6 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.domain.enums import VehicleType
 
-
 PositiveWeight = Annotated[
     Decimal,
     Field(gt=0, max_digits=10, decimal_places=3),

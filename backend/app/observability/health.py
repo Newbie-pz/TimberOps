@@ -19,7 +19,6 @@ from sqlalchemy.pool import NullPool
 
 from app.db.connectivity import database_connect_args
 
-
 logger = logging.getLogger("timberops.readiness")
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 READINESS_CONNECT_TIMEOUT_SECONDS = 2

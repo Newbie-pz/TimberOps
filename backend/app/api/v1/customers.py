@@ -13,7 +13,6 @@ from app.schemas.lifecycle import DeleteEntityInput
 from app.security.permissions import require_permission
 from app.services.customer_service import CustomerService
 
-
 router = APIRouter(prefix="/customers", tags=["Customers"])
 DbSession = Annotated[Session, Depends(get_db)]
 

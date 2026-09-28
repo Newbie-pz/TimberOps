@@ -11,7 +11,6 @@ from app.schemas.dashboard import DashboardOverview
 from app.security.permissions import require_permission
 from app.services.dashboard_service import DashboardService
 
-
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 DbSession = Annotated[Session, Depends(get_db)]
 

@@ -13,7 +13,6 @@ from app.domain.exceptions import AuthenticationError
 from app.models.user import User
 from app.security.jwt import TokenValidationError, decode_access_token
 
-
 bearer_scheme = HTTPBearer(auto_error=False)
 SettingsDependency = Annotated[Settings, Depends(get_settings)]
 BearerCredentials = Annotated[

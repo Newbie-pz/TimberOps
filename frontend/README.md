@@ -8,10 +8,10 @@ Vue 3、TypeScript、Vite、Vue Router、Pinia、Axios、Element Plus。
 
 ```powershell
 cd frontend
-npm install
+npm ci
 npm run dev
 
-npm exec vue-tsc -- -b
+npm run typecheck
 npm run build
 ```
 
@@ -61,4 +61,6 @@ npm run build
 - Dashboard、Billing、Audit、Reports 均接入真实 API，不使用 mock service。
 - AI Chat 使用独立 session id；AI 故障不影响核心业务页面。
 
-当前没有自动化前端测试套件、离线模式、Refresh Token、SSO、多租户或真实磅秤设备 UI。发布前仍需 bundle 优化和人工角色矩阵 E2E。
+当前没有自动化前端测试套件、离线模式、Refresh Token、SSO、多租户或真实磅秤设备 UI。发布前仍需人工角色矩阵 E2E。
+
+仓库统一使用 npm 与 `package-lock.json`；Docker 和 CI 都执行 `npm ci`，不再维护 pnpm lockfile。当前 CI 以 TypeScript 和 production build 作为前端基础质量门禁，Vitest 评估见 [工程质量文档](../docs/engineering.md)。

@@ -4,11 +4,9 @@ from __future__ import annotations
 
 import re
 import subprocess
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
-
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV_FILE = ROOT / ".env"
@@ -22,7 +20,6 @@ LITERAL_SECRET_PATTERN = re.compile(
     r"(?i)\b(?:api[_-]?key|password|secret|token)\b\s*[:=]\s*"
     r"(?P<quote>['\"])(?P<value>[^'\"]{8,})(?P=quote)"
 )
-
 
 @dataclass(frozen=True)
 class Finding:

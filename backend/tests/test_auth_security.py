@@ -14,7 +14,6 @@ from app.security.jwt import (
 )
 from app.security.password import hash_password, verify_password
 
-
 TEST_SECRET = "unit-test-jwt-secret-key-with-at-least-32-characters"
 
 

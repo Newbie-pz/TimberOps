@@ -17,7 +17,6 @@ from app.services.analytics_service import AnalyticsService
 from app.services.vehicle_service import VehicleService
 from app.services.weighing_service import WeighingService
 
-
 FIXED_NOW = datetime(2026, 9, 15, 12, 0, tzinfo=timezone.utc)
 
 

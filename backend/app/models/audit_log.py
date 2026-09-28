@@ -9,7 +9,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, CreatedAtMixin, UUIDPrimaryKeyMixin
 
-
 json_type = JSON().with_variant(JSONB(), "postgresql")
 
 

@@ -2,7 +2,7 @@
 
 TimberOps 是面向中小型货运与加工场景的车辆称重和经营管理系统。当前支持木材、煤炭、矿石及其他货物，提供从车辆与客户建档、人工称重、超重复磅到计费、审计、报表的完整闭环。
 
-当前仓库处于 **Phase 2.7.5 / 开发版本 0.7.0**。它是可运行的工程项目，但不宣称已经完成生产部署或达到 v1.0 发布条件。
+当前仓库处于 **Phase 2.7.6 / 开发版本 0.7.0**。它是可运行的工程项目，但不宣称已经完成生产部署或达到 v1.0 发布条件。
 
 ## 已实现能力
 
@@ -17,6 +17,7 @@ TimberOps 是面向中小型货运与加工场景的车辆称重和经营管理�
 - 面向外部 Agent 的 Streamable HTTP MCP Server（只读）
 - 开发与生产 Docker Compose、Nginx 前端入口、PostgreSQL 持久化
 - 结构化请求日志、Prometheus-compatible Metrics、`/health` 与 `/ready`
+- GitHub Actions CI、Ruff、pytest coverage、前后端构建与 migration 检查
 
 ## 系统架构
 
@@ -112,6 +113,7 @@ docker compose -f docker-compose.prod.yml ps
 - [安全基线](docs/security.md)
 - [可观测性](docs/observability.md)
 - [Metrics](docs/metrics.md)
+- [工程质量与 CI](docs/engineering.md)
 - [后端说明](backend/README.md)
 - [前端说明](frontend/README.md)
 
@@ -127,5 +129,4 @@ docker compose -f docker-compose.prod.yml ps
 - [ ] 在入口层配置 HTTPS / TLS
 - [ ] 建立并演练数据库备份与恢复
 - [ ] 远程暴露 MCP 时增加认证和访问控制
-- [ ] 完成 CI 与工程检查
 - [ ] 接入真实磅秤前完成设备协议与故障降级验证

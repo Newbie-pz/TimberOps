@@ -7,8 +7,7 @@ from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine, event
-from sqlalchemy import select
+from sqlalchemy import Engine, create_engine, event, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -21,9 +20,9 @@ os.environ.setdefault(
 os.environ.setdefault("PUBLIC_REGISTRATION_ENABLED", "true")
 
 import app.models  # noqa: F401  # Register all mapped tables.
-from app.db.session import get_db
 from app.api.dependencies import get_security_session_factory
 from app.db.base import Base
+from app.db.session import get_db
 from app.domain.enums import VehicleType
 from app.domain.rbac_catalog import (
     PERMISSION_DEFINITIONS,

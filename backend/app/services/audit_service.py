@@ -15,7 +15,6 @@ from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
 from app.schemas.audit import AuditLogRead
 
-
 UTC_PLUS_8 = timezone(timedelta(hours=8))
 TARGET_TYPE_ALIASES = {
     "WeighingTask": "WEIGHING_TASK",

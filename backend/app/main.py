@@ -12,7 +12,6 @@ from app.middleware.request_logging import (
     configure_request_logger,
 )
 
-
 OPENAPI_TAGS = [
     {"name": "Auth", "description": "Registration, login, and current identity."},
     {"name": "Users / RBAC", "description": "Administrator-managed users and roles."},

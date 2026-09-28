@@ -1,11 +1,10 @@
 """Pure Decimal-based weighing calculations."""
 
 from dataclasses import dataclass
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 from app.domain.enums import WeightResult
 from app.domain.exceptions import ValidationError
-
 
 TON_QUANTUM = Decimal("0.001")
 ZERO_TONS = Decimal("0.000")

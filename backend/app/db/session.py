@@ -10,7 +10,6 @@ from app.core.config import get_settings
 from app.db.connectivity import database_connect_args
 from app.observability.metrics import register_db_pool_metrics
 
-
 settings = get_settings()
 database_url = settings.require_database_url()
 

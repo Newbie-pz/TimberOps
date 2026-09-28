@@ -13,7 +13,6 @@ from app.schemas.audit import AuditLogRead
 from app.security.permissions import require_permission
 from app.services.audit_service import AuditService
 
-
 router = APIRouter(prefix="/audit", tags=["Audit"])
 DbSession = Annotated[Session, Depends(get_db)]
 

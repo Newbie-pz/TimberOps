@@ -14,7 +14,6 @@ from app.schemas.report import BusinessReport
 from app.security.permissions import require_permission
 from app.services.report_service import ReportService
 
-
 router = APIRouter(prefix="/reports", tags=["Reports"])
 DbSession = Annotated[Session, Depends(get_db)]
 

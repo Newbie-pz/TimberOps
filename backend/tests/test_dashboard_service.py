@@ -18,7 +18,6 @@ from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
 from app.services.dashboard_service import DashboardService
 
-
 FIXED_NOW = datetime(2026, 9, 16, 16, 30, tzinfo=timezone.utc)
 
 

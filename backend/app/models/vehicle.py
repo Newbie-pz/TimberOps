@@ -1,9 +1,8 @@
 """Vehicle persistence model."""
 
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
-
-from datetime import datetime
 
 from sqlalchemy import CheckConstraint, DateTime, Enum, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship

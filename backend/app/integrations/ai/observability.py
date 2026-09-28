@@ -11,7 +11,6 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from app.core.config import get_settings
 from app.observability.metrics import observe_ai_request
 
-
 logger = logging.getLogger("timberops.ai")
 
 

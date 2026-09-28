@@ -13,7 +13,6 @@ from app.api.router import get_readiness_service
 from app.main import app
 from app.observability.health import ReadinessService, readiness_connection
 
-
 EXPECTED_HEAD = "expected_test_revision"
 
 

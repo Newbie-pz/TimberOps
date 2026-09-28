@@ -11,7 +11,6 @@ from app.db.session import SessionLocal
 from app.domain.enums import CargoType
 from app.services.analytics_service import AnalyticsService
 
-
 SessionFactory = Callable[[], Session]
 
 

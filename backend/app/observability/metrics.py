@@ -10,8 +10,8 @@ from threading import Lock
 from typing import Protocol
 
 from prometheus_client import (
-    CollectorRegistry,
     CONTENT_TYPE_LATEST,
+    CollectorRegistry,
     Counter,
     Gauge,
     Histogram,
@@ -20,7 +20,6 @@ from prometheus_client import (
 )
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
-
 
 logger = logging.getLogger("timberops.metrics")
 

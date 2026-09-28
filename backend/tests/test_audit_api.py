@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
+from app.domain.enums import CargoType, PaymentStatus, VehicleType
 from app.models.audit_log import AuditLog
 from app.models.billing import BillingRecord
 from app.models.customer import Customer
@@ -15,7 +16,6 @@ from app.models.rbac import Role, UserRole
 from app.models.user import User
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
-from app.domain.enums import CargoType, PaymentStatus, VehicleType
 from app.security.jwt import create_access_token
 
 

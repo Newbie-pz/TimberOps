@@ -20,7 +20,6 @@ from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
 from app.security.jwt import create_access_token
 
-
 TEST_SECRET = "security-hardening-test-key-with-at-least-32-characters"
 
 

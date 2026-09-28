@@ -12,7 +12,6 @@ from app.core.config import Settings
 from app.main import create_app
 from app.middleware.request_logging import logger as request_logger
 
-
 TEST_SECRET = "request-logging-test-jwt-secret-at-least-32-characters"
 
 

@@ -8,11 +8,10 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.schemas.lifecycle import DeleteEntityInput
+from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
 from app.security.permissions import require_permission
 from app.services.vehicle_service import VehicleService
-
 
 router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
 DbSession = Annotated[Session, Depends(get_db)]

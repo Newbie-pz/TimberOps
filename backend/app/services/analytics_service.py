@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from datetime import date, datetime, time, timedelta, timezone, tzinfo
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from sqlalchemy import Select, and_, func, select
@@ -13,7 +13,6 @@ from app.domain.enums import CargoType, WeighingStatus, WeightType
 from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingRecord, WeighingTask
-
 
 TON_QUANTUM = Decimal("0.001")
 

@@ -17,7 +17,6 @@ from app.models.weighing import WeighingTask
 from app.observability.metrics import record_billing_status_transition
 from app.schemas.billing import BillingRecordListItem
 
-
 UTC_PLUS_8 = timezone(timedelta(hours=8))
 
 

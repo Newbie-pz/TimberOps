@@ -17,7 +17,6 @@ from app.domain.enums import (
 )
 from app.schemas.billing import BillingRecordRead
 
-
 PositiveWeight = Annotated[
     Decimal,
     Field(gt=0, max_digits=10, decimal_places=3),
