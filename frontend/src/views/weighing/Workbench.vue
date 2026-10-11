@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Check, Refresh, WarningFilled } from '@element-plus/icons-vue'
 
@@ -11,12 +11,19 @@ import {
   recordReweigh,
   recordTare,
 } from '@/api/weighing'
+import { getWeighbridgeStatus, getWeighbridgeWeight } from '@/api/weighbridge'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import WeightValue from '@/components/WeightValue.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useWeighingStore } from '@/stores/weighing'
-import type { TaskDetailResponse, WeighingTask, WeightType } from '@/types'
+import type {
+  TaskDetailResponse,
+  WeighbridgeStatus,
+  WeighbridgeWeightReading,
+  WeighingTask,
+  WeightType,
+} from '@/types'
 import {
   cargoTypeLabel,
   formatDateTime,
@@ -37,10 +44,22 @@ const acting = ref(false)
 const tareForm = reactive({ weight_tons: '', remark: '' })
 const grossForm = reactive({ weight_tons: '', remark: '' })
 const reweighForm = reactive({ weight_tons: '', remark: '' })
+const weighbridgeStatus = ref<WeighbridgeStatus | null>(null)
+const deviceReading = ref<WeighbridgeWeightReading | null>(null)
+const manualFallback = ref(false)
+const deviceReadFailed = ref(false)
+let devicePollingTimer: ReturnType<typeof setInterval> | null = null
 
 const taskId = computed(() => String(route.params.id))
 const task = computed<WeighingTask | null>(() => detail.value?.task || null)
 const isOverweight = computed(() => task.value?.weight_result === 'OVERWEIGHT')
+const showDevicePanel = computed(() => weighbridgeStatus.value?.mode === 'simulator')
+const canApplyDeviceWeight = computed(() => (
+  Boolean(deviceReading.value?.stable)
+  && weighbridgeStatus.value?.available === true
+  && !manualFallback.value
+  && ['WAIT_TARE', 'WAIT_GROSS'].includes(task.value?.status || '')
+))
 const currentGrossInput = computed(() =>
   isOverweight.value ? reweighForm.weight_tons : grossForm.weight_tons,
 )
@@ -84,6 +103,67 @@ async function runAction(action: () => Promise<unknown>, successMessage: string)
   }
 }
 
+function stopDevicePolling(): void {
+  if (devicePollingTimer !== null) {
+    clearInterval(devicePollingTimer)
+    devicePollingTimer = null
+  }
+}
+
+async function refreshDeviceWeight(): Promise<void> {
+  if (!weighbridgeStatus.value?.available || manualFallback.value) return
+  try {
+    deviceReading.value = await getWeighbridgeWeight()
+    deviceReadFailed.value = false
+  } catch {
+    deviceReadFailed.value = true
+    manualFallback.value = true
+    stopDevicePolling()
+  }
+}
+
+function startDevicePolling(): void {
+  stopDevicePolling()
+  devicePollingTimer = setInterval(refreshDeviceWeight, 2_000)
+}
+
+async function loadWeighbridge(): Promise<void> {
+  try {
+    weighbridgeStatus.value = await getWeighbridgeStatus()
+    if (weighbridgeStatus.value.mode !== 'simulator') return
+    if (weighbridgeStatus.value.available) {
+      await refreshDeviceWeight()
+      if (!manualFallback.value) startDevicePolling()
+    }
+  } catch {
+    // The shared HTTP client already provides the user-facing error message.
+  }
+}
+
+function useDeviceWeight(): void {
+  if (!canApplyDeviceWeight.value || !deviceReading.value || !task.value) return
+  if (task.value.status === 'WAIT_TARE') {
+    tareForm.weight_tons = deviceReading.value.weight
+  } else if (isOverweight.value) {
+    reweighForm.weight_tons = deviceReading.value.weight
+  } else {
+    grossForm.weight_tons = deviceReading.value.weight
+  }
+  ElMessage.success('设备重量已填入，请确认后提交')
+}
+
+function switchToManualInput(): void {
+  manualFallback.value = true
+  stopDevicePolling()
+}
+
+async function retryDevice(): Promise<void> {
+  manualFallback.value = false
+  deviceReadFailed.value = false
+  deviceReading.value = null
+  await loadWeighbridge()
+}
+
 function getWeightTypeLabel(type: WeightType): string {
   return weightTypeLabel[type]
 }
@@ -125,7 +205,11 @@ async function submitReweigh(): Promise<void> {
   )
 }
 
-onMounted(loadTask)
+onMounted(() => {
+  void loadTask()
+  void loadWeighbridge()
+})
+onBeforeUnmount(stopDevicePolling)
 </script>
 
 <template>
@@ -161,6 +245,41 @@ onMounted(loadTask)
           <el-step title="结果确认" />
           <el-step title="完成出场" />
         </el-steps>
+      </el-card>
+
+      <el-card v-if="showDevicePanel" shadow="never" class="panel-card weighbridge-card">
+        <div class="weighbridge-device">
+          <div>
+            <span class="device-label">模拟地磅</span>
+            <strong>{{ weighbridgeStatus?.message }}</strong>
+          </div>
+          <el-tag :type="weighbridgeStatus?.available ? 'success' : 'danger'" effect="plain">
+            {{ weighbridgeStatus?.available ? '在线' : '不可用' }}
+          </el-tag>
+        </div>
+        <div class="weighbridge-reading">
+          <div>
+            <span>实时重量</span>
+            <strong>{{ deviceReading?.weight ?? '--' }} <small>t</small></strong>
+          </div>
+          <el-tag v-if="deviceReading" :type="deviceReading.stable ? 'success' : 'warning'">
+            {{ deviceReading.stable ? '稳定' : '未稳定' }}
+          </el-tag>
+          <span v-else class="device-hint">
+            {{ deviceReadFailed ? '设备读取失败，已切换人工输入' : '暂无有效读数' }}
+          </span>
+        </div>
+        <div class="weighbridge-actions">
+          <el-button
+            v-if="!manualFallback"
+            type="primary"
+            :disabled="!canApplyDeviceWeight"
+            @click="useDeviceWeight"
+          >使用设备重量</el-button>
+          <el-button v-if="!manualFallback" @click="switchToManualInput">切换人工输入</el-button>
+          <el-button v-else @click="retryDevice">重新连接设备</el-button>
+          <span>设备读数只会填入表单，仍需操作员确认提交。</span>
+        </div>
       </el-card>
 
       <div class="weight-summary-grid">

@@ -1,10 +1,11 @@
 """Environment-backed application configuration."""
 
+from decimal import Decimal, InvalidOperation
 from functools import lru_cache
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -50,6 +51,24 @@ class Settings(BaseSettings):
     public_registration_enabled: bool = Field(
         default=False,
         validation_alias="PUBLIC_REGISTRATION_ENABLED",
+    )
+    weighbridge_mode: Literal["manual", "simulator"] = Field(
+        default="manual",
+        validation_alias="WEIGHBRIDGE_MODE",
+    )
+    weighbridge_simulator_weights: str = Field(
+        default="32.418",
+        validation_alias="WEIGHBRIDGE_SIMULATOR_WEIGHTS",
+    )
+    weighbridge_simulator_stable: bool = Field(
+        default=True,
+        validation_alias="WEIGHBRIDGE_SIMULATOR_STABLE",
+    )
+    weighbridge_simulator_status: Literal[
+        "online", "offline", "timeout", "error"
+    ] = Field(
+        default="online",
+        validation_alias="WEIGHBRIDGE_SIMULATOR_STATUS",
     )
     ai_enabled: bool = Field(default=False, validation_alias="AI_ENABLED")
     llm_provider: str = Field(default="doubao", validation_alias="LLM_PROVIDER")
@@ -97,6 +116,30 @@ class Settings(BaseSettings):
         case_sensitive=False,
         frozen=True,
     )
+
+    @field_validator("weighbridge_simulator_weights")
+    @classmethod
+    def validate_simulator_weights(cls, value: str) -> str:
+        """Require a deterministic, positive comma-separated ton sequence."""
+        raw_weights = [part.strip() for part in value.split(",") if part.strip()]
+        if not raw_weights:
+            raise ValueError("WEIGHBRIDGE_SIMULATOR_WEIGHTS must not be empty")
+        try:
+            weights = [Decimal(part) for part in raw_weights]
+        except InvalidOperation as exc:
+            raise ValueError(
+                "WEIGHBRIDGE_SIMULATOR_WEIGHTS must contain decimal values"
+            ) from exc
+        if any(
+            not weight.is_finite()
+            or weight <= 0
+            or weight > Decimal("9999999.999")
+            for weight in weights
+        ):
+            raise ValueError(
+                "WEIGHBRIDGE_SIMULATOR_WEIGHTS must contain valid positive ton values"
+            )
+        return ",".join(raw_weights)
 
     @model_validator(mode="after")
     def validate_runtime_security(self) -> "Settings":

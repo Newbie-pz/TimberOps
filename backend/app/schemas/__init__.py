@@ -8,6 +8,7 @@ from app.schemas.customer import CustomerCreate, CustomerRead, CustomerUpdate
 from app.schemas.dashboard import DashboardOverview
 from app.schemas.report import BusinessReport
 from app.schemas.vehicle import VehicleCreate, VehicleRead, VehicleUpdate
+from app.schemas.weighbridge import WeighbridgeStatusRead, WeightReadingRead
 from app.schemas.weighing import (
     CancelWeighingTaskInput,
     GrossWeightInput,
@@ -43,4 +44,6 @@ __all__ = [
     "WeighingRecordRead",
     "WeighingTaskCreate",
     "WeighingTaskRead",
+    "WeighbridgeStatusRead",
+    "WeightReadingRead",
 ]

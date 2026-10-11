@@ -24,6 +24,13 @@ from app.integrations.ai.exceptions import (
     AIUpstreamError,
     AIUpstreamTimeoutError,
 )
+from app.integrations.weighbridge.base import (
+    DeviceOfflineError,
+    DeviceReadError,
+    DeviceTimeoutError,
+    ManualModeError,
+    WeighbridgeError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +196,29 @@ async def ai_agent_error_handler(
     )
 
 
+async def weighbridge_error_handler(
+    request: Request,
+    exc: WeighbridgeError,
+) -> JSONResponse:
+    """Expose expected device degradation without leaking protocol detail."""
+    del request
+    if isinstance(exc, ManualModeError):
+        status_code = status.HTTP_409_CONFLICT
+    elif isinstance(exc, DeviceTimeoutError):
+        status_code = status.HTTP_504_GATEWAY_TIMEOUT
+    elif isinstance(exc, DeviceOfflineError):
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    elif isinstance(exc, DeviceReadError):
+        status_code = status.HTTP_502_BAD_GATEWAY
+    else:  # pragma: no cover - future adapter failure fallback
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    return _error_response(
+        status_code=status_code,
+        code=exc.code,
+        message=str(exc),
+    )
+
+
 async def unexpected_error_handler(
     request: Request,
     exc: Exception,
@@ -235,4 +265,5 @@ def register_exception_handlers(application: FastAPI) -> None:
     )
     application.add_exception_handler(AIUpstreamError, ai_upstream_error_handler)
     application.add_exception_handler(AIAgentError, ai_agent_error_handler)
+    application.add_exception_handler(WeighbridgeError, weighbridge_error_handler)
     application.add_exception_handler(Exception, unexpected_error_handler)

@@ -69,6 +69,19 @@ WEIGHING_COMPLETED_TOTAL = Counter(
     "Number of weighing tasks successfully committed as completed.",
     registry=METRICS_REGISTRY,
 )
+WEIGHBRIDGE_READS_TOTAL = Counter(
+    "timberops_weighbridge_reads_total",
+    "Number of weighbridge read attempts by adapter and bounded outcome.",
+    ("adapter", "status"),
+    registry=METRICS_REGISTRY,
+)
+WEIGHBRIDGE_DEVICE_ONLINE = Gauge(
+    "timberops_weighbridge_device_online",
+    "Whether a configured weighbridge adapter currently reports availability.",
+    ("adapter",),
+    multiprocess_mode="livemax",
+    registry=METRICS_REGISTRY,
+)
 DB_POOL_CHECKED_OUT = Gauge(
     "timberops_db_pool_checked_out",
     "Current SQLAlchemy connections checked out by application workers.",
@@ -138,6 +151,25 @@ def record_billing_status_transition(*, status: str) -> None:
 def record_weighing_completed() -> None:
     """Count one successfully committed task completion."""
     _safe_metric_update(WEIGHING_COMPLETED_TOTAL.inc)
+
+
+def observe_weighbridge_read(*, adapter: str, status: str) -> None:
+    """Count one device read without business or identity labels."""
+    _safe_metric_update(
+        lambda: WEIGHBRIDGE_READS_TOTAL.labels(
+            adapter=adapter,
+            status=status,
+        ).inc()
+    )
+
+
+def set_weighbridge_online(*, adapter: str, online: bool) -> None:
+    """Publish degraded device capability independently from application health."""
+    _safe_metric_update(
+        lambda: WEIGHBRIDGE_DEVICE_ONLINE.labels(adapter=adapter).set(
+            1 if online else 0
+        )
+    )
 
 
 def register_db_pool_metrics(engine: Engine) -> None:

@@ -17,6 +17,7 @@ from app.api.v1 import (
     reports,
     users,
     vehicles,
+    weighbridge,
     weighing,
 )
 from app.db.session import engine
@@ -43,6 +44,7 @@ v1_router.include_router(users.router)
 v1_router.include_router(vehicles.router)
 v1_router.include_router(customers.router)
 v1_router.include_router(weighing.router)
+v1_router.include_router(weighbridge.router)
 v1_router.include_router(dashboard.router)
 v1_router.include_router(billing.router)
 v1_router.include_router(audit.router)

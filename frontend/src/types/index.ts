@@ -12,6 +12,8 @@ export type WeighingStatus =
 export type WeightResult = 'PENDING' | 'NORMAL' | 'OVERWEIGHT'
 export type WeightType = 'TARE' | 'GROSS' | 'REWEIGH'
 export type WeightSource = 'MANUAL' | 'DEVICE'
+export type WeighbridgeMode = 'manual' | 'simulator'
+export type WeighbridgeDeviceStatus = 'manual' | 'online' | 'offline' | 'timeout' | 'error'
 export type VehicleType = 'SMALL' | 'MEDIUM' | 'LARGE'
 export type PaymentStatus = 'UNPAID' | 'PAID' | 'WAIVED'
 export type PermissionCode =
@@ -219,6 +221,21 @@ export interface WeighingRecord {
 export interface TaskDetailResponse {
   task: WeighingTask
   records: WeighingRecord[]
+}
+
+export interface WeighbridgeStatus {
+  mode: WeighbridgeMode
+  device_status: WeighbridgeDeviceStatus
+  available: boolean
+  message: string
+}
+
+export interface WeighbridgeWeightReading {
+  weight: Tons
+  unit: 't'
+  stable: boolean
+  timestamp: string
+  device_status: WeighbridgeDeviceStatus
 }
 
 export interface WeighingTaskFilters {

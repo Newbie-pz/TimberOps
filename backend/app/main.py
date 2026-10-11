@@ -7,6 +7,7 @@ from app.api.exceptions import register_exception_handlers
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
 from app.integrations.ai.observability import AIRequestObservabilityMiddleware
+from app.integrations.weighbridge import create_weighbridge_adapter
 from app.middleware.request_logging import (
     RequestLoggingMiddleware,
     configure_request_logger,
@@ -18,6 +19,10 @@ OPENAPI_TAGS = [
     {"name": "Vehicles", "description": "Vehicle master data and lifecycle."},
     {"name": "Customers", "description": "Customer master data and lifecycle."},
     {"name": "Weighing", "description": "Manual weighing workflow and append-only readings."},
+    {
+        "name": "Weighbridge",
+        "description": "Read-only manual/simulator device integration boundary.",
+    },
     {"name": "Billing", "description": "Fee records and audited payment states."},
     {"name": "Dashboard", "description": "Current operational overview."},
     {"name": "Reports", "description": "Daily and monthly business reporting."},
@@ -47,6 +52,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url="/openapi.json" if docs_enabled else None,
     )
     application.state.settings = active_settings
+    application.state.weighbridge_adapter = create_weighbridge_adapter(
+        active_settings
+    )
     register_exception_handlers(application)
     application.include_router(api_router)
     application.add_middleware(AIRequestObservabilityMiddleware)
