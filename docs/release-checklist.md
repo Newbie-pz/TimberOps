@@ -52,6 +52,10 @@ Use this checklist for the exact release artifact and deployment environment. A 
 - [ ] `/health` returns success
 - [ ] `/ready` returns success against the intended database
 - [ ] `/metrics` is disabled or reachable only from an internal monitoring network
+- [ ] Completed-task reversal is available only to ADMIN
+- [ ] A reversal UAT confirms original task, weighing records, and billing record remain unchanged
+- [ ] Reversed tasks are excluded consistently from Dashboard, reports, revenue, and Analytics summaries
+- [ ] PAID tasks are rejected until a separate refund workflow exists
 
 ## Operations
 

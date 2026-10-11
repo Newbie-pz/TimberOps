@@ -25,6 +25,7 @@ const actionLabels: Record<string, string> = {
   GROSS_RECORDED: '记录毛重',
   REWEIGH_RECORDED: '记录复磅',
   WEIGHING_TASK_COMPLETED: '完成称重任务',
+  WEIGHING_REVERSED: '冲正称重任务',
   WEIGHING_TASK_CANCELLED: '取消称重任务',
   WEIGHING_TASK_DELETED: '删除称重任务',
   VEHICLE_DELETED: '删除车辆',

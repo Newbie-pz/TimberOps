@@ -7,6 +7,7 @@ from app.models.rbac import Permission, Role, RolePermission, UserRole
 from app.models.user import User
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingRecord, WeighingTask
+from app.models.weighing_reversal import WeighingReversal
 
 __all__ = [
     "AuditLog",
@@ -21,4 +22,5 @@ __all__ = [
     "Vehicle",
     "WeighingRecord",
     "WeighingTask",
+    "WeighingReversal",
 ]

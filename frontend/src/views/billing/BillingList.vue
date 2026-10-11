@@ -201,6 +201,9 @@ onMounted(async () => {
           <el-tag :type="paymentTagType(row.payment_status)" effect="light" round>{{ paymentLabel(row.payment_status) }}</el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="业务有效性" min-width="110">
+        <template #default="{ row }"><el-tag v-if="row.reversed" type="danger">已冲正</el-tag><span v-else>有效</span></template>
+      </el-table-column>
       <el-table-column label="完成时间" min-width="180">
         <template #default="{ row }">{{ formatDateTime(row.completed_at) }}</template>
       </el-table-column>
@@ -209,7 +212,7 @@ onMounted(async () => {
       </el-table-column>
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
-          <template v-if="row.payment_status === 'UNPAID'">
+          <template v-if="row.payment_status === 'UNPAID' && !row.reversed">
             <el-button
               v-if="authStore.hasPermission('billing:update')"
               link
@@ -227,7 +230,7 @@ onMounted(async () => {
               @click="waive(row)"
             >免除</el-button>
           </template>
-          <span v-else class="table-subtext">已处理</span>
+          <span v-else class="table-subtext">{{ row.reversed ? '冲正后冻结' : '已处理' }}</span>
         </template>
       </el-table-column>
       <template #empty><el-empty description="没有符合条件的费用记录" /></template>

@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from app.models.billing import BillingRecord
     from app.models.customer import Customer
     from app.models.vehicle import Vehicle
+    from app.models.weighing_reversal import WeighingReversal
 
 
 class WeighingTask(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -153,6 +154,10 @@ class WeighingTask(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     billing_record: Mapped["BillingRecord | None"] = relationship(
         back_populates="weighing_task",
+        uselist=False,
+    )
+    reversal: Mapped["WeighingReversal | None"] = relationship(
+        back_populates="original_task",
         uselist=False,
     )
 

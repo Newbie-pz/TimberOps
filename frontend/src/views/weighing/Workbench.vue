@@ -300,6 +300,20 @@ onBeforeUnmount(stopDevicePolling)
         请卸下部分货物后重新称重。本次超重读数已永久保存，不会被复磅覆盖。
       </el-alert>
 
+      <el-alert
+        v-if="task.reversal"
+        class="overweight-alert"
+        type="error"
+        :closable="false"
+        show-icon
+      >
+        <template #title>该业务已冲正，原始称重事实仅供审计</template>
+        操作人：{{ task.reversal.operator_name || '原操作账号' }}；
+        时间：{{ formatDateTime(task.reversal.created_at) }}；
+        原因：{{ task.reversal.reason }}。
+        原始皮重、毛重和净重均未修改。
+      </el-alert>
+
       <div class="workbench-grid">
         <el-card shadow="never" class="panel-card operation-card">
           <template #header>

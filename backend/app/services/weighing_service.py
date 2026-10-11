@@ -30,6 +30,7 @@ from app.models.billing import BillingRecord
 from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingRecord, WeighingTask
+from app.models.weighing_reversal import WeighingReversal
 from app.observability.metrics import (
     record_billing_created,
     record_weighing_completed,
@@ -140,7 +141,12 @@ class WeighingService:
         """Return one task without changing its state."""
         task = self._session.scalar(
             select(WeighingTask)
-            .options(selectinload(WeighingTask.billing_record))
+            .options(
+                selectinload(WeighingTask.billing_record),
+                selectinload(WeighingTask.reversal).selectinload(
+                    WeighingReversal.creator
+                ),
+            )
             .where(
                 WeighingTask.id == task_id,
                 WeighingTask.deleted_at.is_(None),
@@ -159,9 +165,16 @@ class WeighingService:
         payment_status: PaymentStatus | None = None,
     ) -> list[WeighingTask]:
         """List tasks using the simple filters supported by API V1."""
-        statement = select(WeighingTask).options(
-            selectinload(WeighingTask.billing_record)
-        ).where(WeighingTask.deleted_at.is_(None))
+        statement = (
+            select(WeighingTask)
+            .options(
+                selectinload(WeighingTask.billing_record),
+                selectinload(WeighingTask.reversal).selectinload(
+                    WeighingReversal.creator
+                ),
+            )
+            .where(WeighingTask.deleted_at.is_(None))
+        )
         if cargo_type is not None:
             statement = statement.where(WeighingTask.cargo_type == cargo_type)
         if status is not None:

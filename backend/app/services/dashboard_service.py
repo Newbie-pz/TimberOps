@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.db.base import utc_now
 from app.domain.enums import CargoType, PaymentStatus, WeighingStatus
+from app.domain.weighing_validity import task_is_not_reversed
 from app.models.billing import BillingRecord
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
@@ -42,8 +43,10 @@ class DashboardService:
             self._now_factory()
         )
         active_task = WeighingTask.deleted_at.is_(None)
+        valid_task = task_is_not_reversed(WeighingTask.id)
         completed_today = (
             active_task,
+            valid_task,
             WeighingTask.status == WeighingStatus.COMPLETED,
             WeighingTask.completed_at >= start_utc,
             WeighingTask.completed_at < end_utc,
@@ -52,6 +55,7 @@ class DashboardService:
         today_task_count = self._session.scalar(
             select(func.count(WeighingTask.id)).where(
                 active_task,
+                valid_task,
                 WeighingTask.created_at >= start_utc,
                 WeighingTask.created_at < end_utc,
             )
@@ -62,6 +66,7 @@ class DashboardService:
         pending_task_count = self._session.scalar(
             select(func.count(WeighingTask.id)).where(
                 active_task,
+                valid_task,
                 WeighingTask.status.not_in(
                     (WeighingStatus.COMPLETED, WeighingStatus.CANCELLED)
                 ),
@@ -107,7 +112,10 @@ class DashboardService:
     def _status_distribution(self) -> list[StatusDistributionItem]:
         rows = self._session.execute(
             select(WeighingTask.status, func.count(WeighingTask.id))
-            .where(WeighingTask.deleted_at.is_(None))
+            .where(
+                WeighingTask.deleted_at.is_(None),
+                task_is_not_reversed(WeighingTask.id),
+            )
             .group_by(WeighingTask.status)
         ).all()
         counts = {WeighingStatus(status): int(count) for status, count in rows}
@@ -156,6 +164,7 @@ class DashboardService:
             .join(WeighingTask, WeighingTask.vehicle_id == Vehicle.id)
             .where(
                 WeighingTask.deleted_at.is_(None),
+                task_is_not_reversed(WeighingTask.id),
                 WeighingTask.status == WeighingStatus.COMPLETED,
             )
             .group_by(Vehicle.id, Vehicle.plate_number)

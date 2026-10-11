@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { Delete, Download, Refresh, Search } from '@element-plus/icons-vue'
 
 import { listVehicles } from '@/api/vehicle'
-import { deleteWeighingTask, exportWeighingHistory, listWeighingTasks } from '@/api/weighing'
+import { deleteWeighingTask, exportWeighingHistory, listWeighingTasks, reverseWeighingTask } from '@/api/weighing'
 import PageHeader from '@/components/PageHeader.vue'
 import StatusTag from '@/components/StatusTag.vue'
 import WeightValue from '@/components/WeightValue.vue'
@@ -83,6 +83,44 @@ function canDelete(task: WeighingTask): boolean {
     'TARE_COMPLETED',
     'WAIT_GROSS',
   ].includes(task.status)
+}
+
+function canReverse(task: WeighingTask): boolean {
+  return authStore.hasPermission('weighing:reverse')
+    && task.status === 'COMPLETED'
+    && !task.reversal
+    && task.billing_record?.payment_status !== 'PAID'
+}
+
+async function reverseTask(task: WeighingTask): Promise<void> {
+  let reason = ''
+  try {
+    const result = await ElMessageBox.prompt(
+      `请输入冲正任务 ${task.task_no} 的原因`,
+      '冲正已完成称重',
+      {
+        confirmButtonText: '下一步',
+        cancelButtonText: '取消',
+        inputType: 'textarea',
+        inputValidator: (value) => {
+          const normalized = value?.trim() || ''
+          if (!normalized) return '必须填写冲正原因'
+          return normalized.length <= 500 || '冲正原因不能超过 500 个字符'
+        },
+      },
+    )
+    reason = result.value.trim()
+    await ElMessageBox.confirm(
+      '原始任务、重量记录和费用记录都会保留。确认执行冲正吗？',
+      '最终确认',
+      { confirmButtonText: '确认冲正', cancelButtonText: '返回', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  await reverseWeighingTask(task.id, reason)
+  ElMessage.success('任务已冲正；请另行创建正确的称重任务')
+  await load()
 }
 
 async function removeTask(task: WeighingTask): Promise<void> {
@@ -170,16 +208,18 @@ onMounted(async () => {
       <el-table-column prop="cargo_name" label="货物名称" min-width="150"><template #default="{ row }">{{ row.cargo_name || '—' }}</template></el-table-column>
       <el-table-column prop="cargo_remark" label="备注" min-width="180" show-overflow-tooltip><template #default="{ row }">{{ row.cargo_remark || '—' }}</template></el-table-column>
       <el-table-column label="流程状态" min-width="145"><template #default="{ row }"><StatusTag :status="row.status" /></template></el-table-column>
+      <el-table-column label="业务有效性" min-width="110"><template #default="{ row }"><el-tag v-if="row.reversal" type="danger">已冲正</el-tag><el-tag v-else type="success" effect="plain">有效</el-tag></template></el-table-column>
       <el-table-column label="称重结果" min-width="100"><template #default="{ row }"><StatusTag :result="row.weight_result" /></template></el-table-column>
       <el-table-column label="净货重" min-width="120"><template #default="{ row }"><WeightValue :value="row.net_weight_tons" /></template></el-table-column>
       <el-table-column label="费用" min-width="100">
         <template #default="{ row }">{{ row.billing_record ? `${row.billing_record.fee_amount} 元` : '—' }}</template>
       </el-table-column>
       <el-table-column label="更新时间" min-width="180"><template #default="{ row }">{{ formatDateTime(row.updated_at) }}</template></el-table-column>
-      <el-table-column label="操作" width="150" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click.stop="router.push(`/weighing/workbench/${row.id}`)">查看</el-button>
           <el-button v-if="canDelete(row)" link type="danger" :icon="Delete" @click.stop="removeTask(row)">删除</el-button>
+          <el-button v-if="canReverse(row)" link type="danger" @click.stop="reverseTask(row)">冲正/作废</el-button>
         </template>
       </el-table-column>
       <template #empty><el-empty description="没有符合条件的称重任务" /></template>

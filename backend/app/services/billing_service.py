@@ -8,12 +8,17 @@ from sqlalchemy.orm import Session
 
 from app.db.base import utc_now
 from app.domain.enums import PaymentStatus, WeighingStatus
-from app.domain.exceptions import BusinessRuleError, NotFoundError
+from app.domain.exceptions import (
+    BusinessRuleError,
+    NotFoundError,
+    ReversedBillingImmutableError,
+)
 from app.models.audit_log import AuditLog
 from app.models.billing import BillingRecord, BillingRule
 from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
+from app.models.weighing_reversal import WeighingReversal
 from app.observability.metrics import record_billing_status_transition
 from app.schemas.billing import BillingRecordListItem
 
@@ -100,10 +105,15 @@ class BillingService:
                 WeighingTask.customer_id,
                 Customer.name,
                 WeighingTask.completed_at,
+                WeighingReversal.id,
             )
             .join(WeighingTask, WeighingTask.id == BillingRecord.weighing_task_id)
             .join(Vehicle, Vehicle.id == BillingRecord.vehicle_id)
             .outerjoin(Customer, Customer.id == WeighingTask.customer_id)
+            .outerjoin(
+                WeighingReversal,
+                WeighingReversal.original_task_id == WeighingTask.id,
+            )
             .where(WeighingTask.deleted_at.is_(None))
         )
         if start_date is not None:
@@ -141,6 +151,7 @@ class BillingService:
                 customer_id=record_customer_id,
                 customer_name=customer_name,
                 completed_at=completed_at,
+                reversed=reversal_id is not None,
             )
             for (
                 record,
@@ -149,6 +160,7 @@ class BillingService:
                 record_customer_id,
                 customer_name,
                 completed_at,
+                reversal_id,
             ) in rows
         ]
 
@@ -185,6 +197,15 @@ class BillingService:
         )
         if record is None:
             raise NotFoundError(f"billing record not found: {record_id}")
+        reversal_exists = self._session.scalar(
+            select(WeighingReversal.id).where(
+                WeighingReversal.original_task_id == record.weighing_task_id
+            )
+        )
+        if reversal_exists is not None:
+            raise ReversedBillingImmutableError(
+                "已冲正称重任务的费用记录不可再变更"
+            )
         if record.payment_status is target:
             return record
         if record.payment_status is not PaymentStatus.UNPAID:

@@ -69,6 +69,11 @@ WEIGHING_COMPLETED_TOTAL = Counter(
     "Number of weighing tasks successfully committed as completed.",
     registry=METRICS_REGISTRY,
 )
+WEIGHING_REVERSALS_TOTAL = Counter(
+    "timberops_weighing_reversals_total",
+    "Number of successfully committed completed-weighing reversals.",
+    registry=METRICS_REGISTRY,
+)
 WEIGHBRIDGE_READS_TOTAL = Counter(
     "timberops_weighbridge_reads_total",
     "Number of weighbridge read attempts by adapter and bounded outcome.",
@@ -151,6 +156,11 @@ def record_billing_status_transition(*, status: str) -> None:
 def record_weighing_completed() -> None:
     """Count one successfully committed task completion."""
     _safe_metric_update(WEIGHING_COMPLETED_TOTAL.inc)
+
+
+def record_weighing_reversal() -> None:
+    """Count a newly committed reversal once, excluding idempotent retries."""
+    _safe_metric_update(WEIGHING_REVERSALS_TOTAL.inc)
 
 
 def observe_weighbridge_read(*, adapter: str, status: str) -> None:

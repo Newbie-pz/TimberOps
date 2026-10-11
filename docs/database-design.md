@@ -19,6 +19,7 @@ erDiagram
     VEHICLE ||--o{ WEIGHING_TASK : used_by
     CUSTOMER o|--o{ WEIGHING_TASK : optionally_for
     WEIGHING_TASK ||--o{ WEIGHING_RECORD : has
+    WEIGHING_TASK ||--o| WEIGHING_REVERSAL : reversed_by
     WEIGHING_TASK ||--o| BILLING_RECORD : generates
     VEHICLE ||--o{ BILLING_RECORD : charged_for
 ```
@@ -66,6 +67,10 @@ erDiagram
 
 保存唯一 `weighing_task_id`、车辆、车辆类型快照、金额、`UNPAID/PAID/WAIVED` 与创建时间。一任务最多一条费用记录。
 
+### weighing_reversals
+
+已完成任务的追加式补偿记录。保存唯一 `original_task_id`、必填原因、操作人、创建时间，以及冲正时的费用记录、费用状态和金额快照。`original_task_id` 的数据库唯一约束保证一个任务最多冲正一次；外键使用 `RESTRICT`，不会级联删除原任务或费用。现有历史任务没有对应记录时继续视为有效业务。
+
 ### audit_logs
 
 保存 `operator_id`、action、target type/id、前后 JSON 快照、原因和创建时间。API 查询时由 AuditService 批量解析 `target_display`；展示解析失败回退为 target id，不改变审计表结构。
@@ -95,7 +100,7 @@ erDiagram
 
 ## 6. Migration 基线
 
-`backend/migrations/versions/` 当前按新增 revision 演进，包括称重核心、流程简化、生命周期与计费、User、RBAC、操作人、Dashboard/Billing/Audit/Report 权限。禁止编辑已提交历史 migration；执行：
+`backend/migrations/versions/` 当前按新增 revision 演进，包括称重核心、流程简化、生命周期与计费、User、RBAC、操作人、Dashboard/Billing/Audit/Report 权限，以及 completed weighing reversal。禁止编辑已提交历史 migration；执行：
 
 ```powershell
 cd backend

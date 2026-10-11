@@ -6,13 +6,15 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from sqlalchemy import Select, and_, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.db.base import utc_now
 from app.domain.enums import CargoType, WeighingStatus, WeightType
+from app.domain.weighing_validity import task_is_not_reversed
 from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingRecord, WeighingTask
+from app.models.weighing_reversal import WeighingReversal
 
 TON_QUANTUM = Decimal("0.001")
 
@@ -120,6 +122,7 @@ class AnalyticsService:
                 WeighingTask.id == WeighingRecord.weighing_task_id,
             )
             .where(
+                task_is_not_reversed(WeighingTask.id),
                 WeighingRecord.weight_type.in_(
                     (WeightType.GROSS, WeightType.REWEIGH)
                 ),
@@ -206,6 +209,11 @@ class AnalyticsService:
         tasks = list(
             self._session.scalars(
                 select(WeighingTask)
+                .options(
+                    selectinload(WeighingTask.reversal).selectinload(
+                        WeighingReversal.creator
+                    )
+                )
                 .where(WeighingTask.vehicle_id == vehicle.id)
                 .order_by(event_time.desc(), WeighingTask.id.desc())
                 .limit(limit)
@@ -224,6 +232,10 @@ class AnalyticsService:
                     ),
                     "status": task.status.value,
                     "weight_result": task.weight_result.value,
+                    "reversed": task.reversal is not None,
+                    "reversal_reason": (
+                        task.reversal.reason if task.reversal else None
+                    ),
                     "time": _timestamp(
                         task.completed_at or task.gross_time or task.created_at
                     ),
@@ -238,9 +250,13 @@ class AnalyticsService:
         if not normalized_task_no:
             raise ValueError("task_no must not be blank")
         task = self._session.scalar(
-            select(WeighingTask).where(
-                func.upper(WeighingTask.task_no) == normalized_task_no
+            select(WeighingTask)
+            .options(
+                selectinload(WeighingTask.reversal).selectinload(
+                    WeighingReversal.creator
+                )
             )
+            .where(func.upper(WeighingTask.task_no) == normalized_task_no)
         )
         if task is None:
             return {"task_no": normalized_task_no, "found": False}
@@ -290,6 +306,14 @@ class AnalyticsService:
             "weight_result": task.weight_result.value,
             "created_at": _timestamp(task.created_at),
             "completed_at": _timestamp(task.completed_at),
+            "reversed": task.reversal is not None,
+            "reversal_reason": task.reversal.reason if task.reversal else None,
+            "reversed_at": (
+                _timestamp(task.reversal.created_at) if task.reversal else None
+            ),
+            "reversed_by": (
+                task.reversal.operator_name if task.reversal else None
+            ),
             "records": [
                 {
                     "sequence_no": record.sequence_no,
@@ -314,6 +338,7 @@ class AnalyticsService:
         statement = select(WeighingTask).where(
             WeighingTask.status == WeighingStatus.COMPLETED,
             WeighingTask.completed_at.is_not(None),
+            task_is_not_reversed(WeighingTask.id),
         )
         if cargo_type is not None:
             statement = statement.where(WeighingTask.cargo_type == cargo_type)

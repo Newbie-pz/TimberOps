@@ -89,7 +89,22 @@ overweight = max(gross_weight - allowed_gross_weight, 0)
 
 当前没有支付网关；`pay` 是业务确认动作，不代表外部资金渠道结算。
 
-## 5. 身份、授权与审计
+## 5. 已完成业务的冲正/作废
+
+`COMPLETED` 是不可重新打开的历史事实。发现已完成任务录入错误时，不修改任务重量、不删除 `WeighingRecord`，也不删除 `BillingRecord`，而是由 ADMIN 创建唯一的 `WeighingReversal` 补偿记录：
+
+```text
+错误的 Completed 任务
+→ 填写原因并冲正
+→ 保留任务、读数、费用与 AuditLog
+→ 另行创建正确的新任务
+```
+
+一个任务最多一条冲正记录，数据库唯一约束与事务共同保证。重复请求返回既有记录。冲正后的任务不再计入 Dashboard、日报、月报、经营收入或 Analytics 汇总；历史 Excel 仍保留原始行并标记“已冲正”。
+
+费用处理采用保守策略：`UNPAID` 或 `WAIVED` 记录可随业务冲正并被冻结，后续不能支付或变更；`PAID` 记录在没有退款/资金流水模型时禁止直接冲正，避免把业务冲正伪装成退款完成。
+
+## 6. 身份、授权与审计
 
 - 首个 ADMIN 由 CLI 初始化；公开注册用户默认无角色。
 - ADMIN 管理角色；OPERATOR 执行日常称重；VIEWER 只读。
@@ -97,10 +112,10 @@ overweight = max(gross_weight - allowed_gross_weight, 0)
 - 删除、称重完成、费用支付/免除和角色变更等敏感动作写入追加式 AuditLog。
 - Audit 查询展示可读业务对象名称，同时保留稳定的 target type 和 UUID。
 
-## 6. Dashboard 与报表
+## 7. Dashboard 与报表
 
 Dashboard、日报和月报按 UTC+8 确定日期边界。只有 `COMPLETED` 任务计入完成净重，`WAIVED` 费用不计收入。报表与历史导出生成 `.xlsx`，不会修改业务数据。
 
-## 7. AI 与 MCP 边界
+## 8. AI 与 MCP 边界
 
 应用内 AI Agent 和外部 MCP Server 仅调用 AnalyticsService 查询数据。它们不能创建或改变称重、费用、用户和审计记录，且不可用时不得阻塞核心业务。

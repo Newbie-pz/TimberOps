@@ -10,6 +10,7 @@ import type {
   WeighingExportFile,
   WeighingExportFilters,
   WeightInput,
+  WeighingReversal,
 } from '@/types'
 
 export async function getCargoCatalog(): Promise<CargoCatalog> {
@@ -88,6 +89,17 @@ export async function recordReweigh(
 export async function completeWeighingTask(id: string): Promise<WeighingTask> {
   const { data } = await request.post<WeighingTask>(
     `/weighing/tasks/${id}/complete`,
+  )
+  return data
+}
+
+export async function reverseWeighingTask(
+  id: string,
+  reason: string,
+): Promise<WeighingReversal> {
+  const { data } = await request.post<WeighingReversal>(
+    `/weighing/tasks/${id}/reverse`,
+    { reason },
   )
   return data
 }

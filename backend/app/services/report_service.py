@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.db.base import utc_now
 from app.domain.enums import CargoType, PaymentStatus, WeighingStatus
 from app.domain.exceptions import BusinessRuleError
+from app.domain.weighing_validity import task_is_not_reversed
 from app.models.billing import BillingRecord
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
@@ -135,8 +136,10 @@ class ReportService:
         start_utc = self._local_day_start_utc(period_start)
         end_utc = self._local_day_start_utc(period_end_exclusive)
         active_task = WeighingTask.deleted_at.is_(None)
+        valid_task = task_is_not_reversed(WeighingTask.id)
         completed_period = (
             active_task,
+            valid_task,
             WeighingTask.status == WeighingStatus.COMPLETED,
             WeighingTask.completed_at >= start_utc,
             WeighingTask.completed_at < end_utc,
@@ -144,6 +147,7 @@ class ReportService:
         task_count = self._session.scalar(
             select(func.count(WeighingTask.id)).where(
                 active_task,
+                valid_task,
                 WeighingTask.created_at >= start_utc,
                 WeighingTask.created_at < end_utc,
             )

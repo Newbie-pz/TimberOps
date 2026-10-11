@@ -21,6 +21,7 @@ PERMISSION_DEFINITIONS: tuple[tuple[str, str], ...] = (
     ("weighing:complete", "完成称重任务"),
     ("weighing:delete", "删除称重任务"),
     ("weighing:view", "查看称重"),
+    ("weighing:reverse", "冲正已完成称重任务"),
     ("billing:view", "查看费用"),
     ("billing:update", "修改费用"),
     ("billing:waive", "免除费用"),

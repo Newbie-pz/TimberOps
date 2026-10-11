@@ -31,3 +31,4 @@ class BillingRecordListItem(BillingRecordRead):
     customer_id: UUID | None
     customer_name: str | None
     completed_at: datetime | None
+    reversed: bool

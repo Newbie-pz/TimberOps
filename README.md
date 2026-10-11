@@ -51,6 +51,8 @@ flowchart TB
 
 `status` 表示任务生命周期；`weight_result` 独立表示 `PENDING / NORMAL / OVERWEIGHT`。超重时任务回到 `WAIT_GROSS`，接受重新称重，直至结果正常后完成。重量统一使用吨和 `Decimal`。
 
+已完成任务保持不可变。发现历史录入错误时，由 ADMIN 创建独立冲正记录，原任务、称重读数与费用仍完整保留；经营统计排除已冲正业务，操作员随后另行创建正确任务。已支付费用因当前没有退款模型而禁止直接冲正。
+
 ## 技术栈
 
 - 后端：Python 3.11+、FastAPI、SQLAlchemy 2、Pydantic 2、Alembic、PostgreSQL、pytest
@@ -125,7 +127,7 @@ docker compose -f docker-compose.prod.yml ps
 
 ## 当前边界
 
-当前没有订单、库存或物料主数据模块，也没有支付网关、真实磅秤适配器、任务冲正/作废流程、Refresh Token、SSO、多租户、RAG 或多 Agent 编排。MCP 默认仅绑定回环地址，远程暴露前必须补充认证与网络边界。
+当前没有订单、库存或物料主数据模块，也没有支付/退款网关、真实生产磅秤适配器、Refresh Token、SSO、多租户、RAG 或多 Agent 编排。MCP 默认仅绑定回环地址，远程暴露前必须补充认证与网络边界。
 
 ## Production / v1.0 Checklist
 

@@ -30,13 +30,16 @@
 | Phase 2.7.5 | 路由与 Layout lazy loading；Element Plus 按需导入；生产 bundle 优化 |
 | Phase 2.7.6 | GitHub Actions、Ruff、coverage 基线、migration、Compose 与 Docker build 质量门禁 |
 | Phase 2.8.1 | Secret 发布基线、PostgreSQL 备份/非覆盖恢复工具与隔离恢复演练 |
+| Phase 2.8.2 | 可选 TLS overlay、HTTPS edge、HSTS、Proxy 信任边界与隔离演练 |
+| Phase 2.8.3 | Manual / Simulator 磅秤设备适配抽象与设备读数来源 |
+| Phase 2.8.4 | 已完成称重不可变冲正、审计链、统计一致性与 ADMIN 权限 |
 
-## Current — Phase 2.8.2
+## Current — Phase 2.8.4
 
-- 可选 Compose TLS overlay 和 Nginx TLS termination
-- HTTP 到 HTTPS 重定向、现代 TLS 协议及 HTTPS-only HSTS
-- Proxy header 信任边界与公网 Metrics/API Docs 隔离
-- 自签名证书隔离集成演练（不代表公网可信证书）
+- 已完成任务通过独立 `WeighingReversal` 补偿，不改写原任务、读数或费用
+- `weighing:reverse` 仅授予 ADMIN，重复请求稳定返回既有记录
+- Dashboard、报表、收入和 Analytics 汇总统一排除已冲正业务
+- PAID 业务在退款模型落地前禁止直接冲正
 
 ## Planned
 
@@ -45,7 +48,7 @@
 - 真实公网域名、可信 CA 证书及自动续期运维
 - 自动化备份调度、离机加密存储和保留策略执行
 - 真实 weighbridge adapter 及设备故障降级
-- 已完成业务的 correction / void workflow
+- 退款/资金流水模型（当前 PAID 业务不允许直接冲正）
 - Portfolio documentation 的持续整理
 
 订单、库存、物料主数据、支付网关、SSO、多租户、RAG 和多 Agent 不属于当前已承诺范围。

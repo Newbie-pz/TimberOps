@@ -61,6 +61,7 @@ def test_openapi_contains_documented_operational_paths_and_summaries() -> None:
         "/api/v1/weighing/tasks/{task_id}/loading",
         "/api/v1/weighing/tasks/{task_id}/records",
         "/api/v1/weighing/tasks/{task_id}/reweigh",
+        "/api/v1/weighing/tasks/{task_id}/reverse",
         "/api/v1/weighing/tasks/{task_id}/tare",
         "/api/v1/weighing/tasks/{task_id}/wait-gross",
         "/api/v1/weighbridge/status",

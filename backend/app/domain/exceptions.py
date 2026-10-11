@@ -53,3 +53,15 @@ class CustomerHasHistoryError(CodedBusinessError):
     """A customer with weighing history must remain addressable."""
 
     code = "CUSTOMER_HAS_HISTORY"
+
+
+class PaidWeighingRequiresRefundError(CodedBusinessError):
+    """A paid business fact cannot be reversed without an explicit refund flow."""
+
+    code = "PAID_WEIGHING_REQUIRES_REFUND"
+
+
+class ReversedBillingImmutableError(CodedBusinessError):
+    """A charge belonging to a reversed task cannot be transitioned."""
+
+    code = "REVERSED_BILLING_IMMUTABLE"

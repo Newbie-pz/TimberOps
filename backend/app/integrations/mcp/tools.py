@@ -16,6 +16,7 @@ from app.integrations.mcp.schemas import (
     OverweightRecords,
     TodayWeighingSummary,
     VehicleWeighingHistory,
+    VehicleWeighingTask,
     WeighingTaskDetail,
 )
 from app.services.analytics_service import AnalyticsService
@@ -81,7 +82,15 @@ def register_analytics_tools(
                 plate_number=plate_number,
                 limit=limit,
             )
-        return VehicleWeighingHistory.model_validate(result)
+        # Analytics may expose richer fields to the in-process Agent. Keep the
+        # published MCP contract stable by projecting only its declared fields.
+        return VehicleWeighingHistory(
+            plate_number=result["plate_number"],
+            tasks=[
+                VehicleWeighingTask.model_validate(task, extra="ignore")
+                for task in result["tasks"]
+            ],
+        )
 
     @server.tool(annotations=READ_ONLY_ANNOTATIONS, structured_output=True)
     def get_weighing_task_detail(task_no: str) -> WeighingTaskDetail:
@@ -90,4 +99,4 @@ def register_analytics_tools(
             result = AnalyticsService(session).get_weighing_task_detail(
                 task_no=task_no
             )
-        return WeighingTaskDetail.model_validate(result)
+        return WeighingTaskDetail.model_validate(result, extra="ignore")

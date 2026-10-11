@@ -13,6 +13,7 @@ from app.domain.enums import CargoType
 from app.models.customer import Customer
 from app.models.vehicle import Vehicle
 from app.models.weighing import WeighingTask
+from app.models.weighing_reversal import WeighingReversal
 
 BUSINESS_TIMEZONE = timezone(timedelta(hours=8))
 
@@ -31,6 +32,9 @@ EXPORT_HEADERS = (
     "净重(t)",
     "状态",
     "结果",
+    "是否冲正",
+    "冲正时间",
+    "冲正原因",
 )
 
 
@@ -51,9 +55,18 @@ class ExportService:
     ) -> bytes:
         """Return XLSX rows filtered by task creation date in UTC+08:00."""
         statement = (
-            select(WeighingTask, Vehicle.plate_number, Customer.name)
+            select(
+                WeighingTask,
+                Vehicle.plate_number,
+                Customer.name,
+                WeighingReversal,
+            )
             .join(Vehicle, Vehicle.id == WeighingTask.vehicle_id)
             .outerjoin(Customer, Customer.id == WeighingTask.customer_id)
+            .outerjoin(
+                WeighingReversal,
+                WeighingReversal.original_task_id == WeighingTask.id,
+            )
         )
         if start_date is not None:
             statement = statement.where(
@@ -78,7 +91,9 @@ class ExportService:
         for cell in worksheet[1]:
             cell.font = Font(bold=True)
 
-        for task, plate_number, customer_name in self._session.execute(statement):
+        for task, plate_number, customer_name, reversal in self._session.execute(
+            statement
+        ):
             worksheet.append(
                 (
                     task.task_no,
@@ -94,6 +109,9 @@ class ExportService:
                     task.net_weight_tons,
                     task.status.value,
                     task.weight_result.value,
+                    "是" if reversal else "否",
+                    self._excel_datetime(reversal.created_at) if reversal else "",
+                    reversal.reason if reversal else "",
                 )
             )
 
@@ -103,12 +121,14 @@ class ExportService:
         worksheet.column_dimensions["B"].width = 20
         for column in ("C", "D", "E", "F", "G", "H"):
             worksheet.column_dimensions[column].width = 18
-        for column in ("I", "J", "K", "L", "M"):
+        for column in ("I", "J", "K", "L", "M", "N", "O", "P"):
             worksheet.column_dimensions[column].width = 14
         for row in worksheet.iter_rows(min_row=2, min_col=9, max_col=11):
             for cell in row:
                 cell.number_format = "0.000"
         for cell in worksheet["B"][1:]:
+            cell.number_format = "yyyy-mm-dd hh:mm:ss"
+        for cell in worksheet["O"][1:]:
             cell.number_format = "yyyy-mm-dd hh:mm:ss"
 
         output = BytesIO()

@@ -31,6 +31,7 @@ export type PermissionCode =
   | 'weighing:complete'
   | 'weighing:delete'
   | 'weighing:view'
+  | 'weighing:reverse'
   | 'billing:view'
   | 'billing:update'
   | 'billing:waive'
@@ -114,6 +115,19 @@ export interface BillingListItem extends BillingRecord {
   customer_id: string | null
   customer_name: string | null
   completed_at: string | null
+  reversed: boolean
+}
+
+export interface WeighingReversal {
+  id: string
+  original_task_id: string
+  reason: string
+  created_by: string | null
+  operator_name: string | null
+  billing_record_id: string | null
+  billing_payment_status_snapshot: PaymentStatus | null
+  billing_fee_amount_snapshot: string | null
+  created_at: string
 }
 
 export interface BillingRecordFilters {
@@ -159,6 +173,7 @@ export interface WeighingTask {
   created_at: string
   updated_at: string
   billing_record: BillingRecord | null
+  reversal: WeighingReversal | null
 }
 
 export interface User {

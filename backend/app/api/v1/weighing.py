@@ -20,7 +20,12 @@ from app.schemas.weighing import (
     WeighingTaskCreate,
     WeighingTaskRead,
 )
+from app.schemas.weighing_reversal import (
+    WeighingReversalCreate,
+    WeighingReversalRead,
+)
 from app.security.permissions import require_permission
+from app.services.weighing_reversal_service import WeighingReversalService
 from app.services.weighing_service import WeighingService
 
 router = APIRouter(prefix="/weighing", tags=["Weighing"])
@@ -205,6 +210,31 @@ def complete_task(
 ) -> object:
     return WeighingService(session).complete_task(
         task_id,
+        operator_id=current_user.id,
+    )
+
+
+@router.post(
+    "/tasks/{task_id}/reverse",
+    response_model=WeighingReversalRead,
+    summary="Reverse a completed weighing task",
+    description=(
+        "ADMIN-only compensating action. Original task, readings, and billing "
+        "record remain immutable."
+    ),
+)
+def reverse_task(
+    task_id: UUID,
+    data: WeighingReversalCreate,
+    session: DbSession,
+    current_user: Annotated[
+        User,
+        Depends(require_permission("weighing:reverse")),
+    ],
+) -> object:
+    return WeighingReversalService(session).reverse(
+        task_id,
+        data,
         operator_id=current_user.id,
     )
 

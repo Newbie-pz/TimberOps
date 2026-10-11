@@ -16,6 +16,7 @@ from app.domain.enums import (
     WeightType,
 )
 from app.schemas.billing import BillingRecordRead
+from app.schemas.weighing_reversal import WeighingReversalRead
 
 PositiveWeight = Annotated[
     Decimal,
@@ -131,6 +132,7 @@ class WeighingTaskRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     billing_record: BillingRecordRead | None = None
+    reversal: WeighingReversalRead | None = None
 
 
 class TaskDetailResponse(BaseModel):

@@ -19,6 +19,10 @@ from app.schemas.weighing import (
     WeighingTaskCreate,
     WeighingTaskRead,
 )
+from app.schemas.weighing_reversal import (
+    WeighingReversalCreate,
+    WeighingReversalRead,
+)
 
 __all__ = [
     "AIChatRequest",
@@ -44,6 +48,8 @@ __all__ = [
     "WeighingRecordRead",
     "WeighingTaskCreate",
     "WeighingTaskRead",
+    "WeighingReversalCreate",
+    "WeighingReversalRead",
     "WeighbridgeStatusRead",
     "WeightReadingRead",
 ]
