@@ -44,7 +44,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "TimberOps vehicle weighing and operations API. Business endpoints "
             "use JWT authentication and backend RBAC unless explicitly documented."
         ),
-        version="0.7.0",
+        version="1.0.0",
         openapi_tags=OPENAPI_TAGS,
         debug=active_settings.debug,
         docs_url="/docs" if docs_enabled else None,

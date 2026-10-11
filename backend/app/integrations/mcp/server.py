@@ -8,7 +8,7 @@ from app.db.session import SessionLocal
 from app.integrations.mcp.tools import SessionFactory, register_analytics_tools
 
 SERVER_NAME = "TimberOps Read-only Business Server"
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "1.0.0"
 
 
 def create_mcp_server(session_factory: SessionFactory = SessionLocal) -> MCPServer:

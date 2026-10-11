@@ -7,7 +7,7 @@ def test_openapi_metadata_and_business_groups_are_stable() -> None:
     schema = app.openapi()
 
     assert schema["info"]["title"] == app.title
-    assert schema["info"]["version"] == "0.7.0"
+    assert schema["info"]["version"] == "1.0.0"
     assert {tag["name"] for tag in schema["tags"]} == {
         "Auth",
         "Users / RBAC",

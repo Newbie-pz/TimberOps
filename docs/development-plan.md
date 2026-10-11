@@ -33,13 +33,13 @@
 | Phase 2.8.2 | 可选 TLS overlay、HTTPS edge、HSTS、Proxy 信任边界与隔离演练 |
 | Phase 2.8.3 | Manual / Simulator 磅秤设备适配抽象与设备读数来源 |
 | Phase 2.8.4 | 已完成称重不可变冲正、审计链、统计一致性与 ADMIN 权限 |
+| Phase 2.8.5 | v1.0 最终安全公告处理、数据保护验证、版本与发布材料整理 |
 
-## Current — Phase 2.8.4
+## Current — v1.0.0 Code Release
 
-- 已完成任务通过独立 `WeighingReversal` 补偿，不改写原任务、读数或费用
-- `weighing:reverse` 仅授予 ADMIN，重复请求稳定返回既有记录
-- Dashboard、报表、收入和 Analytics 汇总统一排除已冲正业务
-- PAID 业务在退款模型落地前禁止直接冲正
+- 核心称重、费用、审计、经营看板、报表、AI/MCP 与 RBAC 已形成可运行闭环
+- Docker/Nginx/HTTPS、可观测性、CI、备份恢复与冲正具备明确工程基线
+- 代码 Release 与具体生产环境上线分开验收；公网域名、可信 CA、防火墙和厂商设备协议仍由部署方落实
 
 ## Planned
 

@@ -2,14 +2,16 @@
 
 [![CI](https://github.com/Newbie-pz/TimberOps/actions/workflows/ci.yml/badge.svg)](https://github.com/Newbie-pz/TimberOps/actions/workflows/ci.yml)
 
-TimberOps 是面向中小型货运与加工场景的车辆称重和经营管理系统。当前支持木材、煤炭、矿石及其他货物，提供从车辆与客户建档、人工称重、超重复磅到计费、审计、报表的完整闭环。
+TimberOps 是面向中小型货运与加工场景的车辆称重和经营管理系统。当前支持木材、煤炭、矿石及其他货物，提供从车辆与客户建档、称重、超重复磅到计费、审计、报表和历史冲正的完整闭环。
 
-当前仓库处于 **Phase 2.8.2 / 开发版本 0.7.0**。它是可运行的工程项目，但不宣称已经完成公网部署或达到 v1.0 发布条件。
+当前代码版本为 **v1.0.0**。这是可运行、可部署且经过自动化测试的代码 Release；它不代表已经完成特定公网环境的域名、可信证书、防火墙或真实地磅厂商联调。
 
 ## 已实现能力
 
 - 车辆、客户管理及历史数据保护
 - 人工皮重、毛重、超重复磅、任务完成和称重历史
+- Manual / Simulator Weighbridge Adapter，以及未来真实设备协议的稳定接入边界
+- 已完成业务的不可变冲正：保留原任务、读数、费用和完整审计链
 - Excel 称重历史及日/月经营报表导出
 - 完成称重后按车辆类型自动生成费用，支持支付与免除
 - 真实数据 Dashboard、费用中心、审计日志和经营报表
@@ -21,6 +23,7 @@ TimberOps 是面向中小型货运与加工场景的车辆称重和经营管理�
 - 可选 Nginx TLS overlay、HTTP→HTTPS 重定向及生产 Edge 安全边界
 - 结构化请求日志、Prometheus-compatible Metrics、`/health` 与 `/ready`
 - GitHub Actions CI、Ruff、pytest coverage、前后端构建与 migration 检查
+- PostgreSQL 自定义格式备份、SHA-256 manifest 与非覆盖恢复验证工具
 
 ## 系统架构
 
@@ -108,6 +111,10 @@ docker compose -f docker-compose.prod.yml ps
 | `GET /metrics` | Prometheus 文本格式；由 `ENABLE_METRICS` 控制 |
 | `GET /docs` | Swagger UI；由 `ENABLE_API_DOCS` 控制 |
 
+## 演示与作品集
+
+仓库不包含伪造的产品截图。建议按 [作品集截图清单](docs/portfolio.md) 使用真实运行环境采集 Dashboard、称重工作台、冲正、费用、报表、审计、AI、RBAC 和 CI 页面。v1.0 功能摘要见 [Release Notes](docs/release-notes-v1.0.md)。
+
 ## 文档
 
 - [系统架构](docs/architecture.md)
@@ -120,6 +127,8 @@ docker compose -f docker-compose.prod.yml ps
 - [Metrics](docs/metrics.md)
 - [工程质量与 CI](docs/engineering.md)
 - [v1.0 发布检查清单](docs/release-checklist.md)
+- [v1.0 Release Notes](docs/release-notes-v1.0.md)
+- [作品集截图清单](docs/portfolio.md)
 - [PostgreSQL 恢复演练记录](docs/recovery-drill.md)
 - [HTTPS/TLS 隔离演练记录](docs/tls-drill.md)
 - [后端说明](backend/README.md)
@@ -127,7 +136,7 @@ docker compose -f docker-compose.prod.yml ps
 
 ## 当前边界
 
-当前没有订单、库存或物料主数据模块，也没有支付/退款网关、真实生产磅秤适配器、Refresh Token、SSO、多租户、RAG 或多 Agent 编排。MCP 默认仅绑定回环地址，远程暴露前必须补充认证与网络边界。
+当前已实现 Manual 与 Simulator 地磅适配器、HTTPS 部署能力、备份/恢复、CI 和不可变冲正。尚未完成具体厂商真实地磅协议联调、公网可信 CA 上线、远程 MCP 应用层认证或完整退款/资金流水；也没有订单、库存、支付网关、SSO、多租户、RAG 或多 Agent 编排。MCP 默认仅绑定回环地址。
 
 ## Production / v1.0 Checklist
 

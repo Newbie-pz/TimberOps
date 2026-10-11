@@ -2,6 +2,17 @@
 
 Use this checklist for the exact release artifact and deployment environment. A checked item records an operator decision or observed result; it does not imply the repository automates that control.
 
+## Code release gate
+
+- [ ] Release commit is reviewed and Git working tree is clean
+- [ ] GitHub Actions is green for the exact release commit
+- [ ] Version is consistently `1.0.0` in FastAPI, MCP, frontend package metadata, README, and release notes
+- [ ] Ruff, pytest, coverage, frontend typecheck/build, npm audit, security check, Alembic check, and all Compose config checks pass
+- [ ] Phase 2.8.4 reversal UAT evidence is reviewed
+- [ ] `v1.0.0` tag is created only after the preceding items pass
+
+Code release completion does not certify the deployment-specific production items below.
+
 ## Environment
 
 - [ ] `APP_ENV=production`
@@ -70,3 +81,4 @@ Use this checklist for the exact release artifact and deployment environment. A 
 - A real public hostname and trusted CA certificate are not supplied by this repository.
 - The MCP server has no application-layer authentication and must remain loopback/private.
 - Real weighbridge hardware integration and its failure handling have not been implemented.
+- PAID reversal requires a future refund/funds-ledger workflow and remains intentionally blocked.
